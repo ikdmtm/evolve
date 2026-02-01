@@ -32,6 +32,17 @@ export default function LogScreen() {
   const [lightLabel, setLightLabel] = useState('');
   const [lightMinutes, setLightMinutes] = useState('');
 
+  // Strength用
+  const [exercises, setExercises] = useState<Array<{
+    name: string;
+    sets: Array<{
+      reps?: number;
+      weightKg?: number;
+      rpe?: number;
+      note?: string;
+    }>;
+  }>>([]);
+
   const repo = new WorkoutRepository();
   const today = getTodayDate();
 
@@ -61,6 +72,7 @@ export default function LogScreen() {
     setCardioIntensity('medium');
     setLightLabel('');
     setLightMinutes('');
+    setExercises([]);
   }
 
   async function saveWorkout() {
@@ -89,9 +101,12 @@ export default function LogScreen() {
           label: lightLabel || undefined,
           minutes: lightMinutes ? parseInt(lightMinutes) : undefined,
         };
-      } else {
-        // Strengthは後で実装
-        workout.strength = { exercises: [] };
+      } else if (selectedType === 'strength') {
+        if (exercises.length === 0) {
+          Alert.alert('エラー', '少なくとも1つの種目を追加してください');
+          return;
+        }
+        workout.strength = { exercises };
       }
 
       if (editingWorkout) {
@@ -140,9 +155,56 @@ export default function LogScreen() {
     } else if (workout.type === 'light' && workout.light) {
       setLightLabel(workout.light.label || '');
       setLightMinutes(workout.light.minutes ? String(workout.light.minutes) : '');
+    } else if (workout.type === 'strength' && workout.strength) {
+      setExercises(workout.strength.exercises);
     }
     
     setMode('edit');
+  }
+
+  function addExercise() {
+    setExercises([...exercises, { name: '', sets: [] }]);
+  }
+
+  function removeExercise(index: number) {
+    setExercises(exercises.filter((_, i) => i !== index));
+  }
+
+  function updateExerciseName(index: number, name: string) {
+    const newExercises = [...exercises];
+    newExercises[index].name = name;
+    setExercises(newExercises);
+  }
+
+  function addSet(exerciseIndex: number) {
+    const newExercises = [...exercises];
+    newExercises[exerciseIndex].sets.push({});
+    setExercises(newExercises);
+  }
+
+  function removeSet(exerciseIndex: number, setIndex: number) {
+    const newExercises = [...exercises];
+    newExercises[exerciseIndex].sets = newExercises[exerciseIndex].sets.filter((_, i) => i !== setIndex);
+    setExercises(newExercises);
+  }
+
+  function updateSet(
+    exerciseIndex: number,
+    setIndex: number,
+    field: 'reps' | 'weightKg' | 'rpe' | 'note',
+    value: string
+  ) {
+    const newExercises = [...exercises];
+    const set = newExercises[exerciseIndex].sets[setIndex];
+    
+    if (field === 'note') {
+      set[field] = value || undefined;
+    } else {
+      const num = parseFloat(value);
+      set[field] = isNaN(num) ? undefined : num;
+    }
+    
+    setExercises(newExercises);
   }
 
   if (mode === 'list') {
@@ -207,6 +269,12 @@ export default function LogScreen() {
                   <Text style={styles.workoutDetail}>
                     {workout.light.label}
                     {workout.light.minutes && ` - ${workout.light.minutes}分`}
+                  </Text>
+                )}
+                {workout.strength && workout.strength.exercises.length > 0 && (
+                  <Text style={styles.workoutDetail}>
+                    {workout.strength.exercises.length}種目 -{' '}
+                    {workout.strength.exercises.map(e => e.name).join(', ')}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -296,10 +364,67 @@ export default function LogScreen() {
         )}
 
         {selectedType === 'strength' && (
-          <Text style={styles.comingSoon}>
-            ※ 筋トレの詳細入力は次のステップで実装予定{'\n'}
-            現在は簡易保存のみ
-          </Text>
+          <>
+            <Text style={styles.label}>種目</Text>
+            {exercises.map((exercise, exerciseIndex) => (
+              <View key={exerciseIndex} style={styles.exerciseContainer}>
+                <View style={styles.exerciseHeader}>
+                  <TextInput
+                    style={[styles.input, styles.exerciseNameInput]}
+                    value={exercise.name}
+                    onChangeText={(text) => updateExerciseName(exerciseIndex, text)}
+                    placeholder={`種目${exerciseIndex + 1}: ベンチプレス等`}
+                  />
+                  <TouchableOpacity onPress={() => removeExercise(exerciseIndex)}>
+                    <Text style={styles.removeButton}>削除</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {exercise.sets.map((set, setIndex) => (
+                  <View key={setIndex} style={styles.setContainer}>
+                    <Text style={styles.setLabel}>{setIndex + 1}セット目</Text>
+                    <View style={styles.setInputs}>
+                      <TextInput
+                        style={[styles.input, styles.setInput]}
+                        value={set.reps ? String(set.reps) : ''}
+                        onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'reps', text)}
+                        placeholder="回数"
+                        keyboardType="numeric"
+                      />
+                      <TextInput
+                        style={[styles.input, styles.setInput]}
+                        value={set.weightKg ? String(set.weightKg) : ''}
+                        onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'weightKg', text)}
+                        placeholder="重量kg"
+                        keyboardType="decimal-pad"
+                      />
+                      <TextInput
+                        style={[styles.input, styles.setInput]}
+                        value={set.rpe ? String(set.rpe) : ''}
+                        onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'rpe', text)}
+                        placeholder="RPE"
+                        keyboardType="numeric"
+                      />
+                      <TouchableOpacity onPress={() => removeSet(exerciseIndex, setIndex)}>
+                        <Text style={styles.removeSetButton}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+
+                <TouchableOpacity
+                  style={styles.addSetButton}
+                  onPress={() => addSet(exerciseIndex)}
+                >
+                  <Text style={styles.addSetButtonText}>+ セット追加</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <TouchableOpacity style={styles.addExerciseButton} onPress={addExercise}>
+              <Text style={styles.addExerciseButtonText}>+ 種目追加</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         <Text style={styles.label}>メモ（任意）</Text>
@@ -450,6 +575,71 @@ const styles = StyleSheet.create({
     color: '#856404',
     fontSize: 14,
     marginTop: 16,
+  },
+  exerciseContainer: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  exerciseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  exerciseNameInput: {
+    flex: 1,
+  },
+  removeButton: {
+    color: '#ff3b30',
+    fontSize: 14,
+    fontWeight: '600',
+    padding: 8,
+  },
+  setContainer: {
+    marginBottom: 8,
+  },
+  setLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  setInputs: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  setInput: {
+    flex: 1,
+    padding: 8,
+    fontSize: 14,
+  },
+  removeSetButton: {
+    color: '#ff3b30',
+    fontSize: 18,
+    fontWeight: 'bold',
+    padding: 8,
+  },
+  addSetButton: {
+    padding: 8,
+    alignItems: 'center',
+  },
+  addSetButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+  },
+  addExerciseButton: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  addExerciseButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   saveButton: {
     backgroundColor: '#007AFF',
