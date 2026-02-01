@@ -15,8 +15,7 @@ const WEEKDAYS = [
   { id: 6, label: '土曜日', short: '土' },
 ];
 
-const MAX_FIXED_REST_DAYS = 6; // 最大6日まで
-const MAX_MANUAL_REST_DAYS_PER_WEEK = 2; // 週2回まで
+const MAX_TOTAL_REST_DAYS = 6; // 固定休息日 + 手動休息日の合計が週6日まで
 
 export default function SettingsScreen() {
   const [fixedRestDays, setFixedRestDays] = useState<number[]>([]);
@@ -92,9 +91,11 @@ export default function SettingsScreen() {
       
       setManualRestDaysCount(manualRestCount);
       
-      if (manualRestCount >= MAX_MANUAL_REST_DAYS_PER_WEEK) {
+      // 固定休息日を考慮した上限チェック
+      const maxManualRestDays = MAX_TOTAL_REST_DAYS - fixedRestDays.length;
+      if (manualRestCount >= maxManualRestDays) {
         setCanSetRestDay(false);
-        setRestrictionReason(`直近7日間で${MAX_MANUAL_REST_DAYS_PER_WEEK}回使用済みです`);
+        setRestrictionReason(`週の上限に達しています（固定休息日${fixedRestDays.length}日 + 手動${manualRestCount}日 = ${fixedRestDays.length + manualRestCount}日/週）`);
         return;
       }
       
@@ -124,9 +125,10 @@ export default function SettingsScreen() {
       setIsTodayRestDay(value);
       
       if (value) {
+        const maxManualRestDays = MAX_TOTAL_REST_DAYS - fixedRestDays.length;
         Alert.alert(
           '設定完了',
-          `今日を休息日に設定しました\n\n残り使用可能回数: ${MAX_MANUAL_REST_DAYS_PER_WEEK - manualRestDaysCount - 1}回/週`
+          `今日を休息日に設定しました\n\n残り使用可能回数: ${maxManualRestDays - manualRestDaysCount - 1}回/週`
         );
       } else {
         Alert.alert('設定解除', '今日の休息日を解除しました');
@@ -146,10 +148,10 @@ export default function SettingsScreen() {
         return prev.filter(d => d !== dayId);
       } else {
         // 最大6日までの制限
-        if (prev.length >= MAX_FIXED_REST_DAYS) {
+        if (prev.length >= MAX_TOTAL_REST_DAYS) {
           Alert.alert(
             '選択できません',
-            `固定休息日は最大${MAX_FIXED_REST_DAYS}日までです。\n最低週1日は活動する日が必要です。`
+            `固定休息日は最大${MAX_TOTAL_REST_DAYS}日までです。\n最低週1日は活動する日が必要です。`
           );
           return prev;
         }
@@ -193,16 +195,17 @@ export default function SettingsScreen() {
             <View style={styles.restrictionInfo}>
               {!canSetRestDay && !isTodayRestDay ? (
                 <View style={styles.restrictionBadge}>
-                  <Text style={styles.restrictionText}>🚫 {restrictionReason}</Text>
+                  <Text style={styles.restrictionText}>{restrictionReason}</Text>
                 </View>
               ) : (
                 <View style={styles.usageInfo}>
                   <Text style={styles.usageText}>
-                    📊 使用状況: {manualRestDaysCount}/{MAX_MANUAL_REST_DAYS_PER_WEEK}回/週
+                    使用状況: {manualRestDaysCount}/{MAX_TOTAL_REST_DAYS - fixedRestDays.length}回/週
                   </Text>
                   <Text style={styles.usageSubtext}>
                     • 連続使用: 不可{'\n'}
-                    • 週の上限: {MAX_MANUAL_REST_DAYS_PER_WEEK}回まで
+                    • 固定休息日: {fixedRestDays.length}日{'\n'}
+                    • 合計上限: {MAX_TOTAL_REST_DAYS}日/週
                   </Text>
                 </View>
               )}
@@ -216,7 +219,7 @@ export default function SettingsScreen() {
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>固定休息日</Text>
               <Text style={styles.settingDescription}>
-                毎週の休息日を設定（最大{MAX_FIXED_REST_DAYS}日）
+                毎週の休息日を設定（最大{MAX_TOTAL_REST_DAYS}日）
               </Text>
             </View>
             <View style={styles.weekdayGrid}>
@@ -243,7 +246,7 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.fixedRestInfo}>
               <Text style={styles.fixedRestText}>
-                選択中: {fixedRestDays.length}/{MAX_FIXED_REST_DAYS}日
+                選択中: {fixedRestDays.length}/{MAX_TOTAL_REST_DAYS}日 • 残り活動日: {7 - fixedRestDays.length}日/週
               </Text>
             </View>
             {fixedRestDays.length > 0 && (
