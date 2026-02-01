@@ -32,6 +32,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       applyTheme(savedTheme);
     } catch (error) {
       console.error('Failed to load theme:', error);
+      // エラーの場合はデフォルトのダークテーマを使用
+      applyTheme('dark');
     }
   }
 

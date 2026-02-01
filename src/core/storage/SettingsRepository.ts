@@ -45,19 +45,25 @@ export class SettingsRepository {
    * 設定を取得
    */
   async get(): Promise<Settings> {
-    const result = await this.db.getFirstAsync<{ fixed_rest_days: string; theme: string }>(
-      'SELECT fixed_rest_days, theme FROM settings WHERE id = 1'
-    );
+    try {
+      const result = await this.db.getFirstAsync<{ fixed_rest_days: string; theme?: string }>(
+        'SELECT fixed_rest_days, theme FROM settings WHERE id = 1'
+      );
 
-    if (!result) {
-      // デフォルト設定を返す
+      if (!result) {
+        // デフォルト設定を返す
+        return { fixedRestDays: [], theme: 'dark' };
+      }
+
+      return {
+        fixedRestDays: JSON.parse(result.fixed_rest_days),
+        theme: (result.theme || 'dark') as Theme,
+      };
+    } catch (error) {
+      // themeカラムが存在しない場合など、エラーをキャッチしてデフォルト値を返す
+      console.warn('Failed to get settings, using defaults:', error);
       return { fixedRestDays: [], theme: 'dark' };
     }
-
-    return {
-      fixedRestDays: JSON.parse(result.fixed_rest_days),
-      theme: (result.theme || 'dark') as Theme,
-    };
   }
 
   /**
@@ -103,7 +109,12 @@ export class SettingsRepository {
    * テーマを取得
    */
   async getTheme(): Promise<Theme> {
-    const settings = await this.get();
-    return settings.theme;
+    try {
+      const settings = await this.get();
+      return settings.theme;
+    } catch (error) {
+      console.warn('Failed to get theme, using default:', error);
+      return 'dark';
+    }
   }
 }
