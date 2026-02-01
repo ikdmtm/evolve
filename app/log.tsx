@@ -560,17 +560,29 @@ export default function LogScreen() {
       updateExerciseName(editingExerciseIndex, name);
       setShowExerciseModal(false);
     } else {
-      // 新規種目を追加（前回の記録から初期値を取得）
-      const previousSets = await loadPreviousRecord(name);
-      
+      // 新規種目を追加
       console.log('[selectExercise] exerciseName:', name);
-      console.log('[selectExercise] previousSets:', JSON.stringify(previousSets, null, 2));
+      console.log('[selectExercise] current exercises:', JSON.stringify(exercises, null, 2));
       
-      const initialSet = previousSets && previousSets.length > 0 
-        ? { ...previousSets[0] }
-        : { reps: 10, weightKg: 0 };
+      // 1. まず現在編集中の同じ種目を探す
+      const currentExercise = exercises.find(e => e.name === name);
       
-      console.log('[selectExercise] initialSet:', JSON.stringify(initialSet, null, 2));
+      let initialSet: any;
+      
+      if (currentExercise && currentExercise.sets.length > 0) {
+        // 現在編集中の同じ種目がある場合、その最初のセットをコピー
+        initialSet = { ...currentExercise.sets[0] };
+        console.log('[selectExercise] using current exercise first set:', JSON.stringify(initialSet, null, 2));
+      } else {
+        // 2. なければDBから前回の記録を取得
+        const previousSets = await loadPreviousRecord(name);
+        console.log('[selectExercise] previousSets from DB:', JSON.stringify(previousSets, null, 2));
+        
+        initialSet = previousSets && previousSets.length > 0 
+          ? { ...previousSets[0] }
+          : { reps: 10, weightKg: 0 };
+        console.log('[selectExercise] initialSet:', JSON.stringify(initialSet, null, 2));
+      }
       
       setExercises(currentExercises => {
         const newExercises = [...currentExercises, { name, sets: [initialSet] }];
@@ -593,12 +605,24 @@ export default function LogScreen() {
       updateExerciseName(editingExerciseIndex, name);
       setShowExerciseModal(false);
     } else {
-      // カスタム種目でも前回の記録を探す
-      const previousSets = await loadPreviousRecord(name);
+      // 1. まず現在編集中の同じ種目を探す
+      const currentExercise = exercises.find(e => e.name === name);
       
-      const initialSet = previousSets && previousSets.length > 0 
-        ? { ...previousSets[0] }
-        : { reps: 10, weightKg: 0 };
+      let initialSet: any;
+      
+      if (currentExercise && currentExercise.sets.length > 0) {
+        // 現在編集中の同じ種目がある場合、その最初のセットをコピー
+        initialSet = { ...currentExercise.sets[0] };
+        console.log('[addCustomExercise] using current exercise first set:', JSON.stringify(initialSet, null, 2));
+      } else {
+        // 2. なければDBから前回の記録を取得
+        const previousSets = await loadPreviousRecord(name);
+        
+        initialSet = previousSets && previousSets.length > 0 
+          ? { ...previousSets[0] }
+          : { reps: 10, weightKg: 0 };
+        console.log('[addCustomExercise] initialSet:', JSON.stringify(initialSet, null, 2));
+      }
       
       setExercises(currentExercises => [...currentExercises, { name, sets: [initialSet] }]);
       setShowExerciseModal(false);
