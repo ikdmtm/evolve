@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Modal,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { WorkoutRepository } from '../src/core/storage/WorkoutRepository';
@@ -13,6 +14,16 @@ import type { Workout, WorkoutType } from '../src/core/domain/models';
 import { getTodayDate, generateId, formatDateJP } from '../src/utils/date';
 
 type FormMode = 'list' | 'create' | 'edit';
+
+// 主要な筋トレ種目リスト
+const EXERCISE_PRESETS = [
+  { category: '胸', exercises: ['ベンチプレス', 'ダンベルプレス', '腕立て伏せ', 'ディップス'] },
+  { category: '背中', exercises: ['デッドリフト', 'ラットプルダウン', '懸垂', 'ベントオーバーロウ'] },
+  { category: '脚', exercises: ['スクワット', 'レッグプレス', 'レッグカール', 'レッグエクステンション'] },
+  { category: '肩', exercises: ['ショルダープレス', 'サイドレイズ', 'フロントレイズ', 'リアレイズ'] },
+  { category: '腕', exercises: ['バーベルカール', 'ハンマーカール', 'トライセップスエクステンション', 'ディップス'] },
+  { category: 'その他', exercises: ['腹筋', 'プランク', 'カスタム入力'] },
+];
 
 export default function LogScreen() {
   const [mode, setMode] = useState<FormMode>('list');
@@ -42,6 +53,10 @@ export default function LogScreen() {
       note?: string;
     }>;
   }>>([]);
+  const [showExerciseModal, setShowExerciseModal] = useState(false);
+  const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null);
+  const [customExerciseName, setCustomExerciseName] = useState('');
+  const [isCustomMode, setIsCustomMode] = useState(false);
 
   const repo = new WorkoutRepository();
   const today = getTodayDate();
@@ -77,11 +92,14 @@ export default function LogScreen() {
 
   async function saveWorkout() {
     try {
+      // タイトルが空の場合は日付を自動設定
+      const finalTitle = title.trim() || formatDateJP(today);
+      
       const workout: Workout = {
         id: editingWorkout?.id ?? generateId(),
         date: today,
         type: selectedType,
-        title: title || undefined,
+        title: finalTitle,
         note: note || undefined,
         createdAt: editingWorkout?.createdAt ?? Date.now(),
       };
@@ -162,8 +180,43 @@ export default function LogScreen() {
     setMode('edit');
   }
 
-  function addExercise() {
-    setExercises([...exercises, { name: '', sets: [] }]);
+  function openExerciseModal(index: number | null = null) {
+    setEditingExerciseIndex(index);
+    setCustomExerciseName('');
+    setIsCustomMode(false);
+    setShowExerciseModal(true);
+  }
+
+  function selectExercise(name: string) {
+    if (name === 'カスタム入力') {
+      // カスタム入力の場合はモーダルを閉じずに入力欄を表示
+      setIsCustomMode(true);
+      setCustomExerciseName('');
+      return;
+    }
+    
+    if (editingExerciseIndex !== null) {
+      // 既存の種目を編集
+      updateExerciseName(editingExerciseIndex, name);
+    } else {
+      // 新規種目を追加
+      setExercises([...exercises, { name, sets: [{ reps: 10, weightKg: 0 }] }]);
+    }
+    setShowExerciseModal(false);
+  }
+
+  function addCustomExercise() {
+    if (!customExerciseName.trim()) {
+      Alert.alert('エラー', '種目名を入力してください');
+      return;
+    }
+    
+    if (editingExerciseIndex !== null) {
+      updateExerciseName(editingExerciseIndex, customExerciseName.trim());
+    } else {
+      setExercises([...exercises, { name: customExerciseName.trim(), sets: [{ reps: 10, weightKg: 0 }] }]);
+    }
+    setShowExerciseModal(false);
   }
 
   function removeExercise(index: number) {
@@ -287,6 +340,7 @@ export default function LogScreen() {
 
   // 作成・編集フォーム
   return (
+    <>
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => { setMode('list'); setEditingWorkout(null); }}>
@@ -369,12 +423,12 @@ export default function LogScreen() {
             {exercises.map((exercise, exerciseIndex) => (
               <View key={exerciseIndex} style={styles.exerciseContainer}>
                 <View style={styles.exerciseHeader}>
-                  <TextInput
-                    style={[styles.input, styles.exerciseNameInput]}
-                    value={exercise.name}
-                    onChangeText={(text) => updateExerciseName(exerciseIndex, text)}
-                    placeholder={`種目${exerciseIndex + 1}: ベンチプレス等`}
-                  />
+                  <Text style={styles.exerciseName}>
+                    {exercise.name || `種目${exerciseIndex + 1}`}
+                  </Text>
+                  <TouchableOpacity onPress={() => openExerciseModal(exerciseIndex)}>
+                    <Text style={styles.editButton}>変更</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => removeExercise(exerciseIndex)}>
                     <Text style={styles.removeButton}>削除</Text>
                   </TouchableOpacity>
@@ -421,7 +475,7 @@ export default function LogScreen() {
               </View>
             ))}
 
-            <TouchableOpacity style={styles.addExerciseButton} onPress={addExercise}>
+            <TouchableOpacity style={styles.addExerciseButton} onPress={() => openExerciseModal(null)}>
               <Text style={styles.addExerciseButtonText}>+ 種目追加</Text>
             </TouchableOpacity>
           </>
@@ -442,6 +496,59 @@ export default function LogScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+
+    {/* 種目選択モーダル */}
+    <Modal
+      visible={showExerciseModal}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowExerciseModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>種目を選択</Text>
+            <TouchableOpacity onPress={() => setShowExerciseModal(false)}>
+              <Text style={styles.modalCloseButton}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalScroll}>
+            {EXERCISE_PRESETS.map((category) => (
+              <View key={category.category} style={styles.categoryContainer}>
+                <Text style={styles.categoryTitle}>{category.category}</Text>
+                {category.exercises.map((exercise) => (
+                  <TouchableOpacity
+                    key={exercise}
+                    style={styles.exerciseOption}
+                    onPress={() => selectExercise(exercise)}
+                  >
+                    <Text style={styles.exerciseOptionText}>{exercise}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ))}
+
+            {isCustomMode && (
+              <View style={styles.customInputContainer}>
+                <Text style={styles.categoryTitle}>カスタム種目</Text>
+                <TextInput
+                  style={styles.input}
+                  value={customExerciseName}
+                  onChangeText={setCustomExerciseName}
+                  placeholder="種目名を入力..."
+                  autoFocus
+                />
+                <TouchableOpacity style={styles.customAddButton} onPress={addCustomExercise}>
+                  <Text style={styles.customAddButtonText}>追加</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -651,6 +758,89 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontSize: 18,
+    fontWeight: '600',
+  },
+  exerciseName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  editButton: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+    padding: 8,
+    marginRight: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalCloseButton: {
+    fontSize: 24,
+    color: '#666',
+    padding: 4,
+  },
+  modalScroll: {
+    padding: 16,
+  },
+  categoryContainer: {
+    marginBottom: 20,
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+  exerciseOption: {
+    padding: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  exerciseOptionText: {
+    fontSize: 15,
+    color: '#333',
+  },
+  customInputContainer: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+  },
+  customAddButton: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  customAddButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '600',
   },
 });
