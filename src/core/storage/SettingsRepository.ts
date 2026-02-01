@@ -19,7 +19,7 @@ export class SettingsRepository {
   private db: SQLite.SQLiteDatabase;
 
   constructor() {
-    this.db = SQLite.openDatabaseSync('fitmorph.db');
+    this.db = SQLite.openDatabaseSync('continue.db');
   }
 
   /**

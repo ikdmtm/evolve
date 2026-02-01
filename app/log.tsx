@@ -939,13 +939,13 @@ export default function LogScreen() {
                   startEdit(editingWorkout);
                 }}
               >
-                <Text style={[styles.editButtonText, { color: themeColors.textPrimary }]}>編集</Text>
+                <Text style={[styles.editButtonText, { color: '#FFFFFF' }]}>編集</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.deleteButton2, { backgroundColor: themeColors.danger }]}
                 onPress={() => deleteWorkout(editingWorkout.id)}
               >
-                <Text style={[styles.deleteButtonText, { color: themeColors.textPrimary }]}>削除</Text>
+                <Text style={[styles.deleteButtonText, { color: '#FFFFFF' }]}>削除</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -993,7 +993,7 @@ export default function LogScreen() {
                     {exercise.sets.map((set, setIndex) => (
                       <View key={setIndex} style={[styles.detailSetCard, { backgroundColor: themeColors.backgroundCard }]}>
                         <View style={[styles.detailSetNumber, { backgroundColor: themeColors.primary }]}>
-                          <Text style={[styles.detailSetNumberText, { color: themeColors.textPrimary }]}>{setIndex + 1}</Text>
+                          <Text style={[styles.detailSetNumberText, { color: '#FFFFFF' }]}>{setIndex + 1}</Text>
                         </View>
                         <View style={styles.detailSetInfo}>
                           {set.reps !== undefined && (
@@ -1073,7 +1073,7 @@ export default function LogScreen() {
                 style={[styles.activitySelectButton, { backgroundColor: themeColors.primary }]}
                 onPress={openActivityModal}
               >
-                <Text style={[styles.activitySelectButtonText, { color: themeColors.textPrimary }]}>
+                <Text style={[styles.activitySelectButtonText, { color: '#FFFFFF' }]}>
                   {cardioActivity ? '変更' : '選択'}
                 </Text>
               </TouchableOpacity>
@@ -1105,19 +1105,19 @@ export default function LogScreen() {
                 style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(5)}
               >
-                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+5</Text>
+                <Text style={[styles.quickButtonText, { color: '#FFFFFF' }]}>+5</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(10)}
               >
-                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+10</Text>
+                <Text style={[styles.quickButtonText, { color: '#FFFFFF' }]}>+10</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(15)}
               >
-                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+15</Text>
+                <Text style={[styles.quickButtonText, { color: '#FFFFFF' }]}>+15</Text>
               </TouchableOpacity>
             </View>
 
@@ -1133,7 +1133,7 @@ export default function LogScreen() {
                   ]}
                   onPress={() => setCardioIntensity(intensity)}
                 >
-                  <Text style={[styles.intensityButtonText, { color: cardioIntensity === intensity ? themeColors.textPrimary : themeColors.textSecondary }]}>
+                  <Text style={[styles.intensityButtonText, { color: cardioIntensity === intensity ? '#FFFFFF' : themeColors.textSecondary }]}>
                     {intensity === 'easy' && '低'}
                     {intensity === 'medium' && '中'}
                     {intensity === 'hard' && '高'}
@@ -1155,7 +1155,7 @@ export default function LogScreen() {
                 style={[styles.activitySelectButton, { backgroundColor: themeColors.primary }]}
                 onPress={openActivityModal}
               >
-                <Text style={[styles.activitySelectButtonText, { color: themeColors.textPrimary }]}>
+                <Text style={[styles.activitySelectButtonText, { color: '#FFFFFF' }]}>
                   {lightActivity ? '変更' : '選択'}
                 </Text>
               </TouchableOpacity>
@@ -1187,19 +1187,19 @@ export default function LogScreen() {
                 style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(5)}
               >
-                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+5</Text>
+                <Text style={[styles.quickButtonText, { color: '#FFFFFF' }]}>+5</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(10)}
               >
-                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+10</Text>
+                <Text style={[styles.quickButtonText, { color: '#FFFFFF' }]}>+10</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(15)}
               >
-                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+15</Text>
+                <Text style={[styles.quickButtonText, { color: '#FFFFFF' }]}>+15</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -1371,7 +1371,7 @@ export default function LogScreen() {
         />
 
         <TouchableOpacity style={[styles.saveButton, { backgroundColor: themeColors.primary }]} onPress={saveWorkout}>
-          <Text style={[styles.saveButtonText, { color: themeColors.textPrimary }]}>保存</Text>
+          <Text style={[styles.saveButtonText, { color: '#FFFFFF' }]}>保存</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
