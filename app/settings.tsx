@@ -36,18 +36,8 @@ export default function SettingsScreen() {
   );
 
   useEffect(() => {
-    initializeDatabase();
+    loadSettings();
   }, []);
-
-  async function initializeDatabase() {
-    try {
-      const settingsRepo = new SettingsRepository();
-      await settingsRepo.init();
-      await loadSettings();
-    } catch (error) {
-      console.error('Failed to initialize database:', error);
-    }
-  }
 
   async function loadSettings() {
     try {

@@ -40,6 +40,7 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
   // マイグレーション一覧
   const migrations = [
     { version: 1, fn: migration_v1 },
+    { version: 2, fn: migration_v2 },
   ];
 
   for (const migration of migrations) {
@@ -94,5 +95,22 @@ async function migration_v1(database: SQLite.SQLiteDatabase): Promise<void> {
       CHECK(is_rest_day IN (0, 1)),
       CHECK(stage >= 0 AND stage <= 9)
     );
+  `);
+}
+
+/**
+ * マイグレーション v2: Settings テーブル作成
+ */
+async function migration_v2(database: SQLite.SQLiteDatabase): Promise<void> {
+  await database.execAsync(`
+    -- Settings テーブル
+    CREATE TABLE IF NOT EXISTS settings (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      fixed_rest_days TEXT NOT NULL DEFAULT '[]'
+    );
+
+    -- デフォルト設定を挿入
+    INSERT OR IGNORE INTO settings (id, fixed_rest_days)
+    VALUES (1, '[]');
   `);
 }
