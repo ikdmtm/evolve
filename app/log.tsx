@@ -507,10 +507,15 @@ export default function LogScreen() {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const startDate = `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`;
       
+      console.log('[loadPreviousRecord] exerciseName:', exerciseName);
+      console.log('[loadPreviousRecord] dateRange:', startDate, 'to', today);
+      
       const pastWorkouts = await repo.getByDateRange(startDate, today);
+      console.log('[loadPreviousRecord] total pastWorkouts:', pastWorkouts.length);
       
       // 今日の記録は除外
       const filteredWorkouts = pastWorkouts.filter(w => w.date !== today);
+      console.log('[loadPreviousRecord] filtered (excluding today):', filteredWorkouts.length);
       
       // 同じ種目の最新の記録を探す
       for (let i = filteredWorkouts.length - 1; i >= 0; i--) {
@@ -518,6 +523,7 @@ export default function LogScreen() {
         if (workout.strength && workout.strength.exercises) {
           const exercise = workout.strength.exercises.find(e => e.name === exerciseName);
           if (exercise && exercise.sets.length > 0) {
+            console.log('[loadPreviousRecord] found exercise:', exercise.name, 'with sets:', exercise.sets);
             // 前回の記録を保存して返す
             setPreviousRecords(prev => new Map(prev).set(exerciseName, exercise.sets));
             return exercise.sets;
@@ -525,6 +531,7 @@ export default function LogScreen() {
         }
       }
       
+      console.log('[loadPreviousRecord] no previous record found for:', exerciseName);
       // 記録が見つからない場合は削除
       setPreviousRecords(prev => {
         const newMap = new Map(prev);
@@ -554,9 +561,14 @@ export default function LogScreen() {
       // 新規種目を追加（前回の記録から初期値を取得）
       const previousSets = await loadPreviousRecord(name);
       
+      console.log('[selectExercise] exerciseName:', name);
+      console.log('[selectExercise] previousSets:', previousSets);
+      
       const initialSet = previousSets && previousSets.length > 0 
         ? { ...previousSets[0] }
         : { reps: 10, weightKg: 0 };
+      
+      console.log('[selectExercise] initialSet:', initialSet);
       
       setExercises(currentExercises => [...currentExercises, { name, sets: [initialSet] }]);
       setShowExerciseModal(false);
