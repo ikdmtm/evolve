@@ -1,11 +1,14 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { shadows, radius, spacing } from '../src/theme/colors';
+import { shadows, radius, spacing, darkColors } from '../src/theme/colors';
 import { useTheme } from '../src/context/ThemeContext';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
 import { SettingsRepository } from '../src/core/storage/SettingsRepository';
 import { getTodayDate } from '../src/utils/date';
+
+// StyleSheet用の静的カラー（後方互換性）
+const colors = darkColors;
 
 const WEEKDAYS = [
   { id: 0, label: '日曜日', short: '日' },

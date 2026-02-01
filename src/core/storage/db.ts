@@ -41,6 +41,7 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
   const migrations = [
     { version: 1, fn: migration_v1 },
     { version: 2, fn: migration_v2 },
+    { version: 3, fn: migration_v3 },
   ];
 
   for (const migration of migrations) {
@@ -106,12 +107,31 @@ async function migration_v2(database: SQLite.SQLiteDatabase): Promise<void> {
     -- Settings テーブル
     CREATE TABLE IF NOT EXISTS settings (
       id INTEGER PRIMARY KEY CHECK (id = 1),
-      fixed_rest_days TEXT NOT NULL DEFAULT '[]',
-      theme TEXT NOT NULL DEFAULT 'dark'
+      fixed_rest_days TEXT NOT NULL DEFAULT '[]'
     );
 
     -- デフォルト設定を挿入
-    INSERT OR IGNORE INTO settings (id, fixed_rest_days, theme)
-    VALUES (1, '[]', 'dark');
+    INSERT OR IGNORE INTO settings (id, fixed_rest_days)
+    VALUES (1, '[]');
   `);
+}
+
+/**
+ * マイグレーション v3: Settings テーブルにthemeカラムを追加
+ */
+async function migration_v3(database: SQLite.SQLiteDatabase): Promise<void> {
+  // themeカラムが存在するかチェック
+  const tableInfo = await database.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(settings)"
+  );
+  
+  const hasThemeColumn = tableInfo.some(col => col.name === 'theme');
+  
+  if (!hasThemeColumn) {
+    await database.execAsync(`
+      -- themeカラムを追加
+      ALTER TABLE settings ADD COLUMN theme TEXT NOT NULL DEFAULT 'dark';
+    `);
+    console.log('Added theme column to settings table');
+  }
 }
