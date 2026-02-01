@@ -282,18 +282,24 @@ export default function HistoryScreen() {
 
         {/* 凡例 */}
         <View style={[styles.legend, { backgroundColor: colors.backgroundCard }]}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
-            <Text style={[styles.legendText, { color: colors.textSecondary }]}>活動</Text>
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
+              <Text style={[styles.legendText, { color: colors.textSecondary }]}>活動</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: colors.info }]} />
+              <Text style={[styles.legendText, { color: colors.textSecondary }]}>休息</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: colors.warning }]} />
+              <Text style={[styles.legendText, { color: colors.textSecondary }]}>未活動</Text>
+            </View>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.info }]} />
-            <Text style={[styles.legendText, { color: colors.textSecondary }]}>休息</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.warning }]} />
-            <Text style={[styles.legendText, { color: colors.textSecondary }]}>未活動</Text>
-          </View>
+          <View style={[styles.legendDivider, { backgroundColor: colors.border }]} />
+          <Text style={[styles.legendNote, { color: colors.textMuted }]}>
+            数字はその日時点のキャラクターレベルです
+          </Text>
         </View>
       </ScrollView>
 
@@ -606,9 +612,6 @@ const styles = StyleSheet.create({
   
   // 凡例
   legend: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.xl,
     marginTop: spacing.lg,
     padding: spacing.md,
     borderRadius: radius.lg,
@@ -626,6 +629,19 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xl,
+  },
+  legendDivider: {
+    height: 1,
+    marginVertical: spacing.sm,
+  },
+  legendNote: {
+    fontSize: 11,
+    textAlign: 'center',
   },
   
   // モーダル
