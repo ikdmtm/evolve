@@ -381,6 +381,8 @@ export default function LogScreen() {
           try {
             await repo.delete(id);
             Alert.alert('完了', '削除しました');
+            setMode('list');
+            setEditingWorkout(null);
             loadWorkouts();
           } catch (error) {
             Alert.alert('エラー', '削除に失敗しました');
@@ -562,15 +564,19 @@ export default function LogScreen() {
       const previousSets = await loadPreviousRecord(name);
       
       console.log('[selectExercise] exerciseName:', name);
-      console.log('[selectExercise] previousSets:', previousSets);
+      console.log('[selectExercise] previousSets:', JSON.stringify(previousSets, null, 2));
       
       const initialSet = previousSets && previousSets.length > 0 
         ? { ...previousSets[0] }
         : { reps: 10, weightKg: 0 };
       
-      console.log('[selectExercise] initialSet:', initialSet);
+      console.log('[selectExercise] initialSet:', JSON.stringify(initialSet, null, 2));
       
-      setExercises(currentExercises => [...currentExercises, { name, sets: [initialSet] }]);
+      setExercises(currentExercises => {
+        const newExercises = [...currentExercises, { name, sets: [initialSet] }];
+        console.log('[selectExercise] newExercises:', JSON.stringify(newExercises, null, 2));
+        return newExercises;
+      });
       setShowExerciseModal(false);
     }
   }
