@@ -106,11 +106,12 @@ async function migration_v2(database: SQLite.SQLiteDatabase): Promise<void> {
     -- Settings テーブル
     CREATE TABLE IF NOT EXISTS settings (
       id INTEGER PRIMARY KEY CHECK (id = 1),
-      fixed_rest_days TEXT NOT NULL DEFAULT '[]'
+      fixed_rest_days TEXT NOT NULL DEFAULT '[]',
+      theme TEXT NOT NULL DEFAULT 'dark'
     );
 
     -- デフォルト設定を挿入
-    INSERT OR IGNORE INTO settings (id, fixed_rest_days)
-    VALUES (1, '[]');
+    INSERT OR IGNORE INTO settings (id, fixed_rest_days, theme)
+    VALUES (1, '[]', 'dark');
   `);
 }

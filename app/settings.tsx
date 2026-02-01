@@ -1,7 +1,8 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { colors, shadows, radius, spacing } from '../src/theme/colors';
+import { shadows, radius, spacing } from '../src/theme/colors';
+import { useTheme } from '../src/context/ThemeContext';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
 import { SettingsRepository } from '../src/core/storage/SettingsRepository';
 import { getTodayDate } from '../src/utils/date';
@@ -20,6 +21,7 @@ const MAX_TOTAL_REST_DAYS = 6; // 固定休息日 + 手動休息日の合計が�
 const MAX_MANUAL_REST_DAYS_PER_WEEK = 2; // 手動休息日は最大2日/週
 
 export default function SettingsScreen() {
+  const { theme, colors, toggleTheme } = useTheme();
   const [fixedRestDays, setFixedRestDays] = useState<number[]>([]);
   const [isTodayRestDay, setIsTodayRestDay] = useState(false);
   const [canSetRestDay, setCanSetRestDay] = useState(true);
@@ -193,24 +195,24 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* ヘッダー */}
-      <View style={styles.header}>
-        <Text style={styles.title}>設定</Text>
-        <Text style={styles.subtitle}>アプリの設定をカスタマイズ</Text>
+      <View style={[styles.header, { backgroundColor: colors.backgroundLight }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>設定</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>アプリの設定をカスタマイズ</Text>
       </View>
 
       {/* 休息日設定セクション */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>休息日設定</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>休息日設定</Text>
         
         {/* 今日を休息日にする */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.backgroundCard }]}>
           <View style={styles.settingItemColumn}>
             <View style={styles.settingHeader}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>今日を休息日にする</Text>
-                <Text style={styles.settingDescription}>
+                <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>今日を休息日にする</Text>
+                <Text style={[styles.settingDescription, { color: colors.textMuted }]}>
                   急な用事で運動できない時に使用
                 </Text>
               </View>
@@ -247,11 +249,11 @@ export default function SettingsScreen() {
         </View>
 
         {/* 固定休息日 */}
-        <View style={[styles.card, { marginTop: spacing.md }]}>
+        <View style={[styles.card, { marginTop: spacing.md, backgroundColor: colors.backgroundCard }]}>
           <View style={styles.settingItemColumn}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>固定休息日</Text>
-              <Text style={styles.settingDescription}>
+              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>固定休息日</Text>
+              <Text style={[styles.settingDescription, { color: colors.textMuted }]}>
                 毎週の休息日を設定（最大{MAX_TOTAL_REST_DAYS}日）
               </Text>
             </View>
@@ -293,58 +295,63 @@ export default function SettingsScreen() {
 
       {/* 表示設定セクション */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>表示設定</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>表示設定</Text>
+        <View style={[styles.card, { backgroundColor: colors.backgroundCard }]}>
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>テーマ</Text>
-              <Text style={styles.settingDescription}>ダークモード</Text>
+              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>ダークモード</Text>
+              <Text style={[styles.settingDescription, { color: colors.textMuted }]}>
+                {theme === 'dark' ? 'ダークテーマを使用' : 'ライトテーマを使用'}
+              </Text>
             </View>
-            <View style={styles.currentValue}>
-              <Text style={styles.currentValueText}>ON</Text>
-            </View>
+            <Switch
+              value={theme === 'dark'}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border, true: colors.primary + '60' }}
+              thumbColor={theme === 'dark' ? colors.primary : colors.textMuted}
+            />
           </View>
         </View>
       </View>
 
       {/* データ管理セクション */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>データ管理</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>データ管理</Text>
+        <View style={[styles.card, { backgroundColor: colors.backgroundCard }]}>
           <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>データをエクスポート</Text>
-              <Text style={styles.settingDescription}>記録をファイルに保存</Text>
+              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>データをエクスポート</Text>
+              <Text style={[styles.settingDescription, { color: colors.textMuted }]}>記録をファイルに保存</Text>
             </View>
-            <Text style={styles.chevron}>▶</Text>
+            <Text style={[styles.chevron, { color: colors.textMuted }]}>▶</Text>
           </TouchableOpacity>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingInfo}>
               <Text style={[styles.settingLabel, { color: colors.danger }]}>データを初期化</Text>
-              <Text style={styles.settingDescription}>すべての記録を削除</Text>
+              <Text style={[styles.settingDescription, { color: colors.textMuted }]}>すべての記録を削除</Text>
             </View>
-            <Text style={styles.chevron}>▶</Text>
+            <Text style={[styles.chevron, { color: colors.textMuted }]}>▶</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* アプリ情報セクション */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>アプリ情報</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>アプリ情報</Text>
+        <View style={[styles.card, { backgroundColor: colors.backgroundCard }]}>
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>バージョン</Text>
+              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>バージョン</Text>
             </View>
-            <Text style={styles.versionText}>0.1.0</Text>
+            <Text style={[styles.versionText, { color: colors.textSecondary }]}>0.1.0</Text>
           </View>
         </View>
       </View>
 
       {/* フッター */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Evolve - 成長を可視化するアプリ</Text>
+        <Text style={[styles.footerText, { color: colors.textMuted }]}>Evolve - 成長を可視化するアプリ</Text>
       </View>
     </ScrollView>
   );
@@ -353,7 +360,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   content: {
     paddingBottom: spacing.xxl,
@@ -364,17 +370,14 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
-    backgroundColor: colors.backgroundLight,
   },
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: 14,
-    color: colors.textSecondary,
   },
   
   // セクション
@@ -385,14 +388,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: spacing.sm,
     paddingLeft: spacing.xs,
   },
   card: {
-    backgroundColor: colors.backgroundCard,
     borderRadius: radius.lg,
     ...shadows.small,
   },
@@ -416,17 +417,14 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.textPrimary,
     marginBottom: 2,
   },
   settingDescription: {
     fontSize: 12,
-    color: colors.textMuted,
     lineHeight: 18,
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
     marginHorizontal: spacing.md,
   },
   
@@ -517,11 +515,9 @@ const styles = StyleSheet.create({
   },
   chevron: {
     fontSize: 12,
-    color: colors.textMuted,
   },
   versionText: {
     fontSize: 14,
-    color: colors.textSecondary,
     fontWeight: '600',
   },
   
@@ -562,6 +558,5 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: colors.textMuted,
   },
 });

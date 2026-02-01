@@ -4,48 +4,14 @@ import { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { initDatabase } from '../src/core/storage/db';
-import { colors } from '../src/theme/colors';
+import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 
-export default function RootLayout() {
-  const [isDbReady, setIsDbReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function setupDatabase() {
-      try {
-        await initDatabase();
-        setIsDbReady(true);
-      } catch (err) {
-        console.error('Failed to initialize database:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      }
-    }
-
-    setupDatabase();
-  }, []);
-
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>
-          データベース初期化エラー:{'\n'}{error}
-        </Text>
-      </View>
-    );
-  }
-
-  if (!isDbReady) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>読み込み中...</Text>
-      </View>
-    );
-  }
+function RootLayoutContent() {
+  const { theme, colors } = useTheme();
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -116,16 +82,78 @@ export default function RootLayout() {
   );
 }
 
+export default function RootLayout() {
+  const [isDbReady, setIsDbReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function setupDatabase() {
+      try {
+        await initDatabase();
+        setIsDbReady(true);
+      } catch (err) {
+        console.error('Failed to initialize database:', err);
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      }
+    }
+
+    setupDatabase();
+  }, []);
+
+  if (error) {
+    return (
+      <ThemeProvider>
+        <ErrorScreen error={error} />
+      </ThemeProvider>
+    );
+  }
+
+  if (!isDbReady) {
+    return (
+      <ThemeProvider>
+        <LoadingScreen />
+      </ThemeProvider>
+    );
+  }
+
+  return (
+    <ThemeProvider>
+      <RootLayoutContent />
+    </ThemeProvider>
+  );
+}
+
+function LoadingScreen() {
+  const { colors } = useTheme();
+  
+  return (
+    <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={[styles.loadingText, { color: colors.textSecondary }]}>読み込み中...</Text>
+    </View>
+  );
+}
+
+function ErrorScreen({ error }: { error: string }) {
+  const { colors } = useTheme();
+  
+  return (
+    <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+      <Text style={[styles.errorText, { color: colors.danger }]}>
+        データベース初期化エラー:{'\n'}{error}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: colors.background,
   },
   errorText: {
-    color: colors.danger,
     fontSize: 16,
     textAlign: 'center',
   },
@@ -133,11 +161,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 16,
-    color: colors.textSecondary,
     fontSize: 14,
   },
 });

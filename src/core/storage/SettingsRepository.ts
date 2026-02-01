@@ -5,10 +5,14 @@ import * as SQLite from 'expo-sqlite';
  * 
  * 保存する設定:
  * - fixedRestDays: 固定休息日（曜日の配列: 0=日曜, 1=月曜, ..., 6=土曜）
+ * - theme: テーマ（'light' | 'dark'）
  */
+
+export type Theme = 'light' | 'dark';
 
 export interface Settings {
   fixedRestDays: number[]; // 0=日曜, 1=月曜, ..., 6=土曜
+  theme: Theme;
 }
 
 export class SettingsRepository {
@@ -25,14 +29,15 @@ export class SettingsRepository {
     await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY CHECK (id = 1),
-        fixed_rest_days TEXT NOT NULL DEFAULT '[]'
+        fixed_rest_days TEXT NOT NULL DEFAULT '[]',
+        theme TEXT NOT NULL DEFAULT 'dark'
       );
     `);
 
     // デフォルト設定を挿入（存在しない場合のみ）
     await this.db.execAsync(`
-      INSERT OR IGNORE INTO settings (id, fixed_rest_days)
-      VALUES (1, '[]');
+      INSERT OR IGNORE INTO settings (id, fixed_rest_days, theme)
+      VALUES (1, '[]', 'dark');
     `);
   }
 
@@ -40,17 +45,18 @@ export class SettingsRepository {
    * 設定を取得
    */
   async get(): Promise<Settings> {
-    const result = await this.db.getFirstAsync<{ fixed_rest_days: string }>(
-      'SELECT fixed_rest_days FROM settings WHERE id = 1'
+    const result = await this.db.getFirstAsync<{ fixed_rest_days: string; theme: string }>(
+      'SELECT fixed_rest_days, theme FROM settings WHERE id = 1'
     );
 
     if (!result) {
       // デフォルト設定を返す
-      return { fixedRestDays: [] };
+      return { fixedRestDays: [], theme: 'dark' };
     }
 
     return {
       fixedRestDays: JSON.parse(result.fixed_rest_days),
+      theme: (result.theme || 'dark') as Theme,
     };
   }
 
@@ -81,5 +87,23 @@ export class SettingsRepository {
     const fixedRestDays = await this.getFixedRestDays();
     const dayOfWeek = new Date(date).getDay(); // 0=日曜, 1=月曜, ..., 6=土曜
     return fixedRestDays.includes(dayOfWeek);
+  }
+
+  /**
+   * テーマを保存
+   */
+  async setTheme(theme: Theme): Promise<void> {
+    await this.db.runAsync(
+      'UPDATE settings SET theme = ? WHERE id = 1',
+      [theme]
+    );
+  }
+
+  /**
+   * テーマを取得
+   */
+  async getTheme(): Promise<Theme> {
+    const settings = await this.get();
+    return settings.theme;
   }
 }
