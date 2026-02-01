@@ -16,6 +16,7 @@ const WEEKDAYS = [
 ];
 
 const MAX_TOTAL_REST_DAYS = 6; // 固定休息日 + 手動休息日の合計が週6日まで
+const MAX_MANUAL_REST_DAYS_PER_WEEK = 2; // 手動休息日は最大2日/週
 
 export default function SettingsScreen() {
   const [fixedRestDays, setFixedRestDays] = useState<number[]>([]);
@@ -92,10 +93,18 @@ export default function SettingsScreen() {
       setManualRestDaysCount(manualRestCount);
       
       // 固定休息日を考慮した上限チェック
-      const maxManualRestDays = MAX_TOTAL_REST_DAYS - fixedRestDays.length;
+      // 手動休息日は最大2日/週、かつ合計6日以内
+      const maxManualRestDays = Math.min(
+        MAX_MANUAL_REST_DAYS_PER_WEEK,
+        MAX_TOTAL_REST_DAYS - fixedRestDays.length
+      );
       if (manualRestCount >= maxManualRestDays) {
         setCanSetRestDay(false);
-        setRestrictionReason(`週の上限に達しています（固定休息日${fixedRestDays.length}日 + 手動${manualRestCount}日 = ${fixedRestDays.length + manualRestCount}日/週）`);
+        if (manualRestCount >= MAX_MANUAL_REST_DAYS_PER_WEEK) {
+          setRestrictionReason(`手動休息日は週${MAX_MANUAL_REST_DAYS_PER_WEEK}日までです（現在${manualRestCount}日使用中）`);
+        } else {
+          setRestrictionReason(`週の上限に達しています（固定休息日${fixedRestDays.length}日 + 手動${manualRestCount}日 = ${fixedRestDays.length + manualRestCount}日/週）`);
+        }
         return;
       }
       
@@ -125,7 +134,10 @@ export default function SettingsScreen() {
       setIsTodayRestDay(value);
       
       if (value) {
-        const maxManualRestDays = MAX_TOTAL_REST_DAYS - fixedRestDays.length;
+        const maxManualRestDays = Math.min(
+          MAX_MANUAL_REST_DAYS_PER_WEEK,
+          MAX_TOTAL_REST_DAYS - fixedRestDays.length
+        );
         Alert.alert(
           '設定完了',
           `今日を休息日に設定しました\n\n残り使用可能回数: ${maxManualRestDays - manualRestDaysCount - 1}回/週`
@@ -200,10 +212,11 @@ export default function SettingsScreen() {
               ) : (
                 <View style={styles.usageInfo}>
                   <Text style={styles.usageText}>
-                    使用状況: {manualRestDaysCount}/{MAX_TOTAL_REST_DAYS - fixedRestDays.length}回/週
+                    使用状況: {manualRestDaysCount}/{Math.min(MAX_MANUAL_REST_DAYS_PER_WEEK, MAX_TOTAL_REST_DAYS - fixedRestDays.length)}回/週
                   </Text>
                   <Text style={styles.usageSubtext}>
                     • 連続使用: 不可{'\n'}
+                    • 手動休息日: 最大{MAX_MANUAL_REST_DAYS_PER_WEEK}日/週{'\n'}
                     • 固定休息日: {fixedRestDays.length}日{'\n'}
                     • 合計上限: {MAX_TOTAL_REST_DAYS}日/週
                   </Text>
