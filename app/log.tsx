@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { WorkoutRepository } from '../src/core/storage/WorkoutRepository';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
+import { SettingsRepository } from '../src/core/storage/SettingsRepository';
 import type { Workout, WorkoutType } from '../src/core/domain/models';
 import { getTodayDate, generateId, formatDateJP } from '../src/utils/date';
 import { colors, shadows, radius, spacing } from '../src/theme/colors';
@@ -380,6 +381,7 @@ export default function LogScreen() {
   async function updateDayLevel(date: string) {
     try {
       const dayStateRepo = new DayStateRepository();
+      const settingsRepo = new SettingsRepository();
       
       // その日の記録を取得
       const workouts = await repo.getByDate(date);
@@ -392,20 +394,23 @@ export default function LogScreen() {
       const yesterdayState = await dayStateRepo.getByDate(yesterdayStr);
       const prevLevel = yesterdayState?.level ?? 0;
       
-      // 今日の休息日設定を取得
+      // 休息日設定を取得（手動 or 固定）
       const todayState = await dayStateRepo.getByDate(date);
-      const isRestDay = todayState?.isRestDay ?? false;
+      const dayOfWeek = new Date(date).getDay();
+      const fixedRestDays = await settingsRepo.getFixedRestDays();
+      const isFixedRestDay = fixedRestDays.includes(dayOfWeek);
+      const isRestDay = todayState?.isRestDay ?? isFixedRestDay;
       
-      // レベルを計算
+      // レベルを計算（活動優先）
       let newLevel = prevLevel;
-      if (isRestDay) {
-        // 休息日はレベル維持
-        newLevel = prevLevel;
-      } else if (hasActivity) {
-        // 活動ありは+1
+      if (hasActivity) {
+        // 活動ありは休息日設定に関わらず+1（活動優先）
         newLevel = Math.min(prevLevel + 1, 10);
+      } else if (isRestDay) {
+        // 活動なし + 休息日はレベル維持
+        newLevel = prevLevel;
       } else {
-        // 活動なしは-1
+        // 活動なし + 非休息日は-1
         newLevel = Math.max(prevLevel - 1, 0);
       }
       
@@ -416,7 +421,7 @@ export default function LogScreen() {
         level: newLevel,
       });
       
-      console.log(`[updateDayLevel] ${date}: ${prevLevel} -> ${newLevel} (hasActivity: ${hasActivity}, isRestDay: ${isRestDay})`);
+      console.log(`[updateDayLevel] ${date}: ${prevLevel} -> ${newLevel} (hasActivity: ${hasActivity}, isRestDay: ${isRestDay}, isFixedRestDay: ${isFixedRestDay})`);
     } catch (error) {
       console.error('Failed to update day level:', error);
     }

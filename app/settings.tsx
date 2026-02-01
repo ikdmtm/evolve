@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { colors, shadows, radius, spacing } from '../src/theme/colors';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
+import { SettingsRepository } from '../src/core/storage/SettingsRepository';
 import { getTodayDate } from '../src/utils/date';
 
 const WEEKDAYS = [
@@ -35,23 +36,35 @@ export default function SettingsScreen() {
   );
 
   useEffect(() => {
-    loadSettings();
+    initializeDatabase();
   }, []);
+
+  async function initializeDatabase() {
+    try {
+      const settingsRepo = new SettingsRepository();
+      await settingsRepo.init();
+      await loadSettings();
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+    }
+  }
 
   async function loadSettings() {
     try {
       setLoading(true);
       const dayStateRepo = new DayStateRepository();
+      const settingsRepo = new SettingsRepository();
       
       // 今日の休息日設定を取得
       const todayState = await dayStateRepo.getByDate(today);
       setIsTodayRestDay(todayState?.isRestDay ?? false);
       
-      // 固定休息日の設定を取得（将来的にはSettingsRepositoryから）
-      setFixedRestDays([]);
+      // 固定休息日の設定を取得
+      const fixedDays = await settingsRepo.getFixedRestDays();
+      setFixedRestDays(fixedDays);
       
       // 休息日設定可否をチェック
-      await checkCanSetRestDay();
+      await checkCanSetRestDay(fixedDays);
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -59,9 +72,11 @@ export default function SettingsScreen() {
     }
   }
 
-  async function checkCanSetRestDay() {
+  async function checkCanSetRestDay(currentFixedRestDays?: number[]) {
     try {
       const dayStateRepo = new DayStateRepository();
+      const settingsRepo = new SettingsRepository();
+      const fixedDays = currentFixedRestDays ?? await settingsRepo.getFixedRestDays();
       
       // 1. 前日が休息日かチェック
       const yesterday = new Date(today);
@@ -84,8 +99,10 @@ export default function SettingsScreen() {
         
         const dayState = await dayStateRepo.getByDate(dateStr);
         // 固定休息日でない休息日をカウント
-        // 将来的には固定休息日を除外する判定を追加
-        if (dayState?.isRestDay && dateStr !== today) {
+        const dayOfWeek = date.getDay();
+        const isFixedRestDay = fixedDays.includes(dayOfWeek);
+        
+        if (dayState?.isRestDay && dateStr !== today && !isFixedRestDay) {
           manualRestCount++;
         }
       }
@@ -96,14 +113,14 @@ export default function SettingsScreen() {
       // 手動休息日は最大2日/週、かつ合計6日以内
       const maxManualRestDays = Math.min(
         MAX_MANUAL_REST_DAYS_PER_WEEK,
-        MAX_TOTAL_REST_DAYS - fixedRestDays.length
+        MAX_TOTAL_REST_DAYS - fixedDays.length
       );
       if (manualRestCount >= maxManualRestDays) {
         setCanSetRestDay(false);
         if (manualRestCount >= MAX_MANUAL_REST_DAYS_PER_WEEK) {
           setRestrictionReason(`手動休息日は週${MAX_MANUAL_REST_DAYS_PER_WEEK}日までです（現在${manualRestCount}日使用中）`);
         } else {
-          setRestrictionReason(`週の上限に達しています（固定休息日${fixedRestDays.length}日 + 手動${manualRestCount}日 = ${fixedRestDays.length + manualRestCount}日/週）`);
+          setRestrictionReason(`週の上限に達しています（固定休息日${fixedDays.length}日 + 手動${manualRestCount}日 = ${fixedDays.length + manualRestCount}日/週）`);
         }
         return;
       }
@@ -154,22 +171,35 @@ export default function SettingsScreen() {
     }
   }
 
-  function toggleFixedRestDay(dayId: number) {
-    setFixedRestDays(prev => {
-      if (prev.includes(dayId)) {
-        return prev.filter(d => d !== dayId);
+  async function toggleFixedRestDay(dayId: number) {
+    try {
+      const settingsRepo = new SettingsRepository();
+      let newFixedRestDays: number[];
+      
+      if (fixedRestDays.includes(dayId)) {
+        newFixedRestDays = fixedRestDays.filter(d => d !== dayId);
       } else {
         // 最大6日までの制限
-        if (prev.length >= MAX_TOTAL_REST_DAYS) {
+        if (fixedRestDays.length >= MAX_TOTAL_REST_DAYS) {
           Alert.alert(
             '選択できません',
             `固定休息日は最大${MAX_TOTAL_REST_DAYS}日までです。\n最低週1日は活動する日が必要です。`
           );
-          return prev;
+          return;
         }
-        return [...prev, dayId].sort();
+        newFixedRestDays = [...fixedRestDays, dayId].sort();
       }
-    });
+      
+      // データベースに保存
+      await settingsRepo.setFixedRestDays(newFixedRestDays);
+      setFixedRestDays(newFixedRestDays);
+      
+      // 休息日設定可否を再チェック
+      await checkCanSetRestDay(newFixedRestDays);
+    } catch (error) {
+      console.error('Failed to toggle fixed rest day:', error);
+      Alert.alert('エラー', '固定休息日の設定に失敗しました');
+    }
   }
 
   return (
@@ -263,8 +293,8 @@ export default function SettingsScreen() {
               </Text>
             </View>
             {fixedRestDays.length > 0 && (
-              <View style={styles.comingSoonBadge}>
-                <Text style={styles.comingSoonText}>Coming Soon - 自動適用機能は未実装</Text>
+              <View style={styles.activeBadge}>
+                <Text style={styles.activeText}>✓ 設定保存済み</Text>
               </View>
             )}
           </View>
@@ -467,6 +497,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  activeBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    backgroundColor: colors.success + '20',
+    borderRadius: radius.xs,
+    marginTop: spacing.sm,
+  },
+  activeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.success,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
