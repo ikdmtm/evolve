@@ -1,8 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { WorkoutRepository } from '../src/core/storage/WorkoutRepository';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
 import { getTodayDate, formatDateJP } from '../src/utils/date';
+import { colors, getLevelColor, shadows, radius, spacing } from '../src/theme/colors';
 
 export default function HomeScreen() {
   const [currentDate, setCurrentDate] = useState(getTodayDate());
@@ -12,6 +14,13 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
 
   const today = getTodayDate();
+
+  // 画面フォーカス時にデータを再読み込み
+  useFocusEffect(
+    useCallback(() => {
+      loadDayData();
+    }, [currentDate])
+  );
 
   useEffect(() => {
     loadDayData();
@@ -24,12 +33,10 @@ export default function HomeScreen() {
       const dayStateRepo = new DayStateRepository();
       const workoutRepo = new WorkoutRepository();
 
-      // レベルと休息日情報を取得
       const dayState = await dayStateRepo.getByDate(currentDate);
       setLevel(dayState?.level ?? 0);
       setIsRestDay(dayState?.isRestDay ?? false);
 
-      // その日の活動記録を確認
       const workouts = await workoutRepo.getByDate(currentDate);
       setHasActivity(workouts.length > 0);
     } catch (error) {
@@ -51,23 +58,21 @@ export default function HomeScreen() {
   }
 
   function getStatusText() {
-    if (isRestDay) {
-      return '休息日';
-    }
-    if (hasActivity) {
-      return '活動済み';
-    }
+    if (isRestDay) return '休息日';
+    if (hasActivity) return '活動済み';
     return '未活動';
   }
 
+  function getStatusIcon() {
+    if (isRestDay) return '🌙';
+    if (hasActivity) return '🔥';
+    return '💤';
+  }
+
   function getStatusColor() {
-    if (isRestDay) {
-      return '#34C759'; // 緑: 休息日
-    }
-    if (hasActivity) {
-      return '#007AFF'; // 青: 活動済み
-    }
-    return '#FF9500'; // オレンジ: 未活動
+    if (isRestDay) return colors.info;
+    if (hasActivity) return colors.success;
+    return colors.warning;
   }
 
   if (loading) {
@@ -78,6 +83,8 @@ export default function HomeScreen() {
     );
   }
 
+  const levelColor = getLevelColor(level);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* 日付ナビゲーション */}
@@ -85,16 +92,22 @@ export default function HomeScreen() {
         <TouchableOpacity 
           style={styles.navButton} 
           onPress={() => navigateDate(-1)}
+          activeOpacity={0.7}
         >
-          <Text style={styles.navButtonText}>← 前日</Text>
+          <Text style={styles.navButtonText}>◀</Text>
         </TouchableOpacity>
         
         <View style={styles.dateContainer}>
           <Text style={styles.dateText}>{formatDateJP(currentDate)}</Text>
           {currentDate !== today && (
             <TouchableOpacity onPress={goToToday} style={styles.todayButton}>
-              <Text style={styles.todayButtonText}>今日</Text>
+              <Text style={styles.todayButtonText}>今日に戻る</Text>
             </TouchableOpacity>
+          )}
+          {currentDate === today && (
+            <View style={styles.todayBadge}>
+              <Text style={styles.todayBadgeText}>TODAY</Text>
+            </View>
           )}
         </View>
         
@@ -102,58 +115,85 @@ export default function HomeScreen() {
           style={[styles.navButton, currentDate >= today && styles.navButtonDisabled]} 
           onPress={() => navigateDate(1)}
           disabled={currentDate >= today}
+          activeOpacity={0.7}
         >
           <Text style={[styles.navButtonText, currentDate >= today && styles.navButtonTextDisabled]}>
-            翌日 →
+            ▶
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* キャラクター表示エリア */}
-      <View style={styles.characterContainer}>
-        <View style={[styles.characterPlaceholder, { borderColor: getStatusColor() }]}>
-          <Text style={styles.characterText}>キャラクター</Text>
-          <Text style={styles.characterSubtext}>Level {level}</Text>
+      {/* メインカード - キャラクター & レベル */}
+      <View style={styles.mainCard}>
+        {/* キャラクター表示エリア */}
+        <View style={styles.characterArea}>
+          <View style={[styles.characterCircle, { borderColor: levelColor }]}>
+            <Text style={styles.characterEmoji}>
+              {level >= 8 ? '🦁' : level >= 5 ? '🐕' : level >= 2 ? '🐱' : '🐣'}
+            </Text>
+          </View>
+          <View style={styles.levelBadge}>
+            <Text style={[styles.levelBadgeText, { color: levelColor }]}>Lv.{level}</Text>
+          </View>
+        </View>
+
+        {/* レベルバー */}
+        <View style={styles.levelSection}>
+          <View style={styles.levelHeader}>
+            <Text style={styles.levelLabel}>レベル進捗</Text>
+            <Text style={[styles.levelValue, { color: levelColor }]}>{level}/10</Text>
+          </View>
+          <View style={styles.levelBarContainer}>
+            <View style={styles.levelBarBackground}>
+              {[...Array(11)].map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.levelSegment,
+                    i <= level && { backgroundColor: levelColor },
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+          <View style={styles.levelLabels}>
+            <Text style={styles.levelLabelText}>0</Text>
+            <Text style={styles.levelLabelText}>5</Text>
+            <Text style={styles.levelLabelText}>10</Text>
+          </View>
         </View>
       </View>
 
-      {/* レベル表示 */}
-      <View style={styles.levelContainer}>
-        <Text style={styles.levelLabel}>現在のレベル</Text>
-        <View style={styles.levelBar}>
-          {[...Array(11)].map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.levelSegment,
-                i <= level && styles.levelSegmentActive,
-              ]}
-            />
-          ))}
+      {/* 状態カード */}
+      <View style={[styles.statusCard, { borderLeftColor: getStatusColor() }]}>
+        <View style={styles.statusIconContainer}>
+          <Text style={styles.statusIcon}>{getStatusIcon()}</Text>
         </View>
-        <View style={styles.levelRange}>
-          <Text style={styles.levelRangeText}>0</Text>
-          <Text style={styles.levelRangeText}>10</Text>
+        <View style={styles.statusInfo}>
+          <Text style={styles.statusLabel}>本日のステータス</Text>
+          <Text style={[styles.statusText, { color: getStatusColor() }]}>
+            {getStatusText()}
+          </Text>
         </View>
       </View>
 
-      {/* 状態表示 */}
-      <View style={[styles.statusContainer, { borderLeftColor: getStatusColor() }]}>
-        <Text style={styles.statusLabel}>今日の状態</Text>
-        <Text style={[styles.statusText, { color: getStatusColor() }]}>
-          {getStatusText()}
-        </Text>
-      </View>
-
-      {/* 説明 */}
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoTitle}>レベルについて</Text>
-        <Text style={styles.infoText}>
-          • 活動を記録するとレベルが上がります{'\n'}
-          • 何もしないとレベルが下がります{'\n'}
-          • 休息日は下がりません{'\n'}
-          • レベルは0〜10の11段階です
-        </Text>
+      {/* 説明カード */}
+      <View style={styles.infoCard}>
+        <Text style={styles.infoTitle}>レベルシステム</Text>
+        <View style={styles.infoList}>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoIcon}>🔥</Text>
+            <Text style={styles.infoText}>活動するとレベルUP</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoIcon}>💤</Text>
+            <Text style={styles.infoText}>何もしないとレベルDOWN</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoIcon}>🌙</Text>
+            <Text style={styles.infoText}>休息日はキープ</Text>
+          </View>
+        </View>
       </View>
     </ScrollView>
   );
@@ -162,153 +202,236 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 20,
+    padding: spacing.lg,
+    paddingTop: 60,
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 100,
   },
+  
+  // 日付ナビゲーション
   dateNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   navButton: {
-    padding: 12,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    minWidth: 80,
+    width: 44,
+    height: 44,
+    borderRadius: radius.full,
+    backgroundColor: colors.backgroundCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.small,
   },
   navButtonDisabled: {
-    backgroundColor: '#f0f0f0',
-    borderColor: '#e0e0e0',
+    backgroundColor: colors.backgroundLight,
+    opacity: 0.5,
   },
   navButtonText: {
-    fontSize: 14,
-    color: '#007AFF',
+    fontSize: 16,
+    color: colors.primary,
     fontWeight: '600',
-    textAlign: 'center',
   },
   navButtonTextDisabled: {
-    color: '#999',
+    color: colors.textMuted,
   },
   dateContainer: {
     alignItems: 'center',
   },
   dateText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    letterSpacing: 0.5,
   },
   todayButton: {
-    marginTop: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.full,
   },
   todayButtonText: {
     fontSize: 12,
-    color: '#fff',
+    color: colors.textPrimary,
     fontWeight: '600',
   },
-  characterContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
+  todayBadge: {
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    backgroundColor: colors.accent,
+    borderRadius: radius.xs,
   },
-  characterPlaceholder: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+  todayBadgeText: {
+    fontSize: 10,
+    color: colors.background,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+
+  // メインカード
+  mainCard: {
+    backgroundColor: colors.backgroundCard,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    ...shadows.medium,
+  },
+  characterArea: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  characterCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     borderWidth: 4,
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
+    ...shadows.large,
   },
-  characterText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+  characterEmoji: {
+    fontSize: 64,
   },
-  characterSubtext: {
-    fontSize: 16,
-    color: '#666',
+  levelBadge: {
+    marginTop: -16,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.background,
+    borderRadius: radius.full,
+    borderWidth: 2,
+    borderColor: colors.backgroundCard,
   },
-  levelContainer: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 16,
+  levelBadgeText: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  
+  // レベルセクション
+  levelSection: {
+    marginTop: spacing.sm,
+  },
+  levelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   levelLabel: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    color: colors.textSecondary,
     fontWeight: '600',
   },
-  levelBar: {
+  levelValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  levelBarContainer: {
+    marginBottom: spacing.xs,
+  },
+  levelBarBackground: {
     flexDirection: 'row',
-    gap: 4,
-    marginBottom: 8,
+    gap: 3,
+    backgroundColor: colors.backgroundLight,
+    borderRadius: radius.sm,
+    padding: 4,
   },
   levelSegment: {
     flex: 1,
-    height: 12,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 6,
+    height: 16,
+    backgroundColor: colors.border,
+    borderRadius: radius.xs,
   },
-  levelSegmentActive: {
-    backgroundColor: '#007AFF',
-  },
-  levelRange: {
+  levelLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 4,
   },
-  levelRangeText: {
-    fontSize: 12,
-    color: '#999',
-  },
-  statusContainer: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-  },
-  statusLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+  levelLabelText: {
+    fontSize: 10,
+    color: colors.textMuted,
     fontWeight: '600',
   },
-  statusText: {
-    fontSize: 24,
-    fontWeight: 'bold',
+
+  // 状態カード
+  statusCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundCard,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderLeftWidth: 4,
+    ...shadows.small,
   },
-  infoContainer: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginTop: 8,
+  statusIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: radius.md,
+    backgroundColor: colors.backgroundLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  statusIcon: {
+    fontSize: 24,
+  },
+  statusInfo: {
+    flex: 1,
+  },
+  statusLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontWeight: '600',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statusText: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+
+  // 説明カード
+  infoCard: {
+    backgroundColor: colors.backgroundCard,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    ...shadows.small,
   },
   infoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  infoList: {
+    gap: spacing.sm,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoIcon: {
+    fontSize: 18,
+    marginRight: spacing.sm,
+    width: 28,
+    textAlign: 'center',
   },
   infoText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 22,
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
 });
