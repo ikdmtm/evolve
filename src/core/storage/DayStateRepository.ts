@@ -1,10 +1,12 @@
 import { getDatabase } from './db';
-import { Stage } from '../domain/stage';
+import { Level } from '../domain/stage';
 
 export type DayStateRecord = {
   date: string;
   isRestDay: boolean;
-  stage: Stage;
+  level: Level;
+  /** @deprecated Use level instead */
+  stage?: Level;
 };
 
 /**
@@ -16,6 +18,9 @@ export class DayStateRepository {
    */
   async upsert(dayState: DayStateRecord): Promise<void> {
     const db = getDatabase();
+    
+    // 後方互換性: stageがあればそれを使用
+    const level = dayState.level ?? dayState.stage ?? 0;
 
     await db.runAsync(
       `INSERT INTO day_states (date, is_rest_day, stage)
@@ -23,7 +28,7 @@ export class DayStateRepository {
        ON CONFLICT(date) DO UPDATE SET
          is_rest_day = excluded.is_rest_day,
          stage = excluded.stage`,
-      [dayState.date, dayState.isRestDay ? 1 : 0, dayState.stage]
+      [dayState.date, dayState.isRestDay ? 1 : 0, level]
     );
   }
 
@@ -35,13 +40,16 @@ export class DayStateRepository {
 
     await db.withTransactionAsync(async () => {
       for (const dayState of dayStates) {
+        // 後方互換性: stageがあればそれを使用
+        const level = dayState.level ?? dayState.stage ?? 0;
+        
         await db.runAsync(
           `INSERT INTO day_states (date, is_rest_day, stage)
            VALUES (?, ?, ?)
            ON CONFLICT(date) DO UPDATE SET
              is_rest_day = excluded.is_rest_day,
              stage = excluded.stage`,
-          [dayState.date, dayState.isRestDay ? 1 : 0, dayState.stage]
+          [dayState.date, dayState.isRestDay ? 1 : 0, level]
         );
       }
     });
@@ -112,9 +120,9 @@ export class DayStateRepository {
     const db = getDatabase();
 
     const existing = await this.getByDate(date);
-    const stage = existing?.stage ?? 0;
+    const level = existing?.level ?? 0;
 
-    await this.upsert({ date, isRestDay, stage });
+    await this.upsert({ date, isRestDay, level });
   }
 
   /**
@@ -132,7 +140,7 @@ export class DayStateRepository {
     return {
       date: row.date,
       isRestDay: row.is_rest_day === 1,
-      stage: row.stage,
+      level: row.stage, // DBカラム名はstageのまま（互換性のため）
     };
   }
 }

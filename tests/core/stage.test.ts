@@ -1,21 +1,21 @@
-import { computeTimeline, nextStage } from "../../src/core/domain/stage";
+import { computeTimeline, nextLevel } from "../../src/core/domain/stage";
 
-describe("stage rules", () => {
+describe("level rules", () => {
   test("activity => +1", () => {
-    expect(nextStage(0, { date: "2026-01-01", isRestDay: false, didActivity: true })).toBe(1);
+    expect(nextLevel(0, { date: "2026-01-01", isRestDay: false, didActivity: true })).toBe(1);
   });
 
   test("no activity => -1", () => {
-    expect(nextStage(3, { date: "2026-01-01", isRestDay: false, didActivity: false })).toBe(2);
+    expect(nextLevel(3, { date: "2026-01-01", isRestDay: false, didActivity: false })).toBe(2);
   });
 
   test("rest day => no change (even if no activity)", () => {
-    expect(nextStage(3, { date: "2026-01-01", isRestDay: true, didActivity: false })).toBe(3);
+    expect(nextLevel(3, { date: "2026-01-01", isRestDay: true, didActivity: false })).toBe(3);
   });
 
-  test("clamp 0..9", () => {
-    expect(nextStage(9, { date: "2026-01-01", isRestDay: false, didActivity: true })).toBe(9);
-    expect(nextStage(0, { date: "2026-01-01", isRestDay: false, didActivity: false })).toBe(0);
+  test("clamp 0..10", () => {
+    expect(nextLevel(10, { date: "2026-01-01", isRestDay: false, didActivity: true })).toBe(10);
+    expect(nextLevel(0, { date: "2026-01-01", isRestDay: false, didActivity: false })).toBe(0);
   });
 
   test("timeline recompute", () => {
@@ -26,6 +26,6 @@ describe("stage rules", () => {
       { date: "2026-01-04", isRestDay: false, didActivity: true },  // 0->1
     ];
     const tl = computeTimeline(0, days);
-    expect(tl.map(x => x.stage)).toEqual([1,0,0,1]);
+    expect(tl.map(x => x.level)).toEqual([1,0,0,1]);
   });
 });

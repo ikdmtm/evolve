@@ -1,4 +1,4 @@
-export type Stage = number; // 0..9
+export type Level = number; // 0..10
 
 export type DayInput = {
   date: string; // YYYY-MM-DD
@@ -6,32 +6,40 @@ export type DayInput = {
   didActivity: boolean; // true if ANY workout exists on that day
 };
 
-export function clampStage(stage: number): Stage {
-  if (stage < 0) return 0;
-  if (stage > 9) return 9;
-  return stage;
+export function clampLevel(level: number): Level {
+  if (level < 0) return 0;
+  if (level > 10) return 10;
+  return level;
 }
 
-export function nextStage(prev: Stage, day: DayInput): Stage {
+export function nextLevel(prev: Level, day: DayInput): Level {
   if (day.isRestDay) return prev;
-  if (day.didActivity) return clampStage(prev + 1);
-  return clampStage(prev - 1);
+  if (day.didActivity) return clampLevel(prev + 1);
+  return clampLevel(prev - 1);
 }
 
 /**
- * Recompute stage timeline from a start stage and ordered day inputs.
+ * Recompute level timeline from a start level and ordered day inputs.
  * days must be chronological ascending.
  */
 export function computeTimeline(
-  startStage: Stage,
+  startLevel: Level,
   days: DayInput[]
-): { date: string; stage: Stage }[] {
-  let current = clampStage(startStage);
-  const out: { date: string; stage: Stage }[] = [];
+): { date: string; level: Level }[] {
+  let current = clampLevel(startLevel);
+  const out: { date: string; level: Level }[] = [];
 
   for (const d of days) {
-    current = nextStage(current, d);
-    out.push({ date: d.date, stage: current });
+    current = nextLevel(current, d);
+    out.push({ date: d.date, level: current });
   }
   return out;
 }
+
+// 後方互換性のためのエイリアス（非推奨）
+/** @deprecated Use Level instead */
+export type Stage = Level;
+/** @deprecated Use clampLevel instead */
+export const clampStage = clampLevel;
+/** @deprecated Use nextLevel instead */
+export const nextStage = nextLevel;
