@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { WorkoutRepository } from '../src/core/storage/WorkoutRepository';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
+import { SettingsRepository } from '../src/core/storage/SettingsRepository';
 import { formatDateJP, getTodayDate } from '../src/utils/date';
 import { colors, getLevelColor, shadows, radius, spacing } from '../src/theme/colors';
 import type { Workout } from '../src/core/domain/models';
@@ -49,7 +50,10 @@ export default function HistoryScreen() {
       setLoading(true);
       const dayStateRepo = new DayStateRepository();
       const workoutRepo = new WorkoutRepository();
+      const settingsRepo = new SettingsRepository();
 
+      // 固定休息日を取得
+      const fixedRestDays = await settingsRepo.getFixedRestDays();
       const dates = generateCalendarDates(currentMonth.year, currentMonth.month);
       
       const infos: DayInfo[] = await Promise.all(
@@ -57,10 +61,18 @@ export default function HistoryScreen() {
           const dayState = await dayStateRepo.getByDate(date);
           const workouts = await workoutRepo.getByDate(date);
           
+          // 固定休息日かどうかをチェック
+          const dayOfWeek = new Date(date).getDay();
+          const isFixedRestDay = fixedRestDays.includes(dayOfWeek);
+          
+          // 固定休息日または手動休息日の場合はisRestDay=true
+          // ただし、活動がある場合は活動優先（hasActivity=trueだけど表示は活動日扱い）
+          const isRestDay = dayState?.isRestDay ?? isFixedRestDay;
+          
           return {
             date,
             level: dayState?.level ?? 0,
-            isRestDay: dayState?.isRestDay ?? false,
+            isRestDay,
             hasActivity: workouts.length > 0,
             isCurrentMonth,
           };
@@ -132,8 +144,9 @@ export default function HistoryScreen() {
 
   function getDayStatusColor(day: DayInfo): string {
     if (!day.isCurrentMonth) return 'transparent';
-    if (day.isRestDay) return colors.info;
+    // 活動優先: 活動がある場合は休息日でも活動日として表示
     if (day.hasActivity) return colors.success;
+    if (day.isRestDay) return colors.info;
     return colors.warning;
   }
 

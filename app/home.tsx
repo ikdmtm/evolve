@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { WorkoutRepository } from '../src/core/storage/WorkoutRepository';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
+import { SettingsRepository } from '../src/core/storage/SettingsRepository';
 import { getTodayDate, formatDateJP } from '../src/utils/date';
 import { colors, getLevelColor, shadows, radius, spacing } from '../src/theme/colors';
 
@@ -32,10 +33,18 @@ export default function HomeScreen() {
       
       const dayStateRepo = new DayStateRepository();
       const workoutRepo = new WorkoutRepository();
+      const settingsRepo = new SettingsRepository();
 
       const dayState = await dayStateRepo.getByDate(currentDate);
       setLevel(dayState?.level ?? 0);
-      setIsRestDay(dayState?.isRestDay ?? false);
+      
+      // 固定休息日かどうかをチェック
+      const dayOfWeek = new Date(currentDate).getDay();
+      const fixedRestDays = await settingsRepo.getFixedRestDays();
+      const isFixedRestDay = fixedRestDays.includes(dayOfWeek);
+      
+      // 固定休息日または手動休息日の場合はisRestDay=true
+      setIsRestDay(dayState?.isRestDay ?? isFixedRestDay);
 
       const workouts = await workoutRepo.getByDate(currentDate);
       setHasActivity(workouts.length > 0);
@@ -58,20 +67,23 @@ export default function HomeScreen() {
   }
 
   function getStatusText() {
-    if (isRestDay) return '休息日';
+    // 活動優先: 活動がある場合は休息日でも活動日として表示
     if (hasActivity) return '活動済み';
+    if (isRestDay) return '休息日';
     return '未活動';
   }
 
   function getStatusIcon() {
-    if (isRestDay) return '🌙';
+    // 活動優先: 活動がある場合は休息日でも活動日として表示
     if (hasActivity) return '🔥';
+    if (isRestDay) return '🌙';
     return '💤';
   }
 
   function getStatusColor() {
-    if (isRestDay) return colors.info;
+    // 活動優先: 活動がある場合は休息日でも活動日として表示
     if (hasActivity) return colors.success;
+    if (isRestDay) return colors.info;
     return colors.warning;
   }
 
