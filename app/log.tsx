@@ -667,9 +667,9 @@ export default function LogScreen() {
                   <View style={styles.workoutCardContent}>
                     {workout.cardio && (
                       <View style={styles.workoutCardInfo}>
-                        <Text style={styles.workoutCardInfoLabel}>⏱️ 時間</Text>
+                        <Text style={styles.workoutCardInfoLabel}>時間</Text>
                         <Text style={styles.workoutCardInfoValue}>{workout.cardio.minutes}分</Text>
-                        <Text style={styles.workoutCardInfoLabel}>💪 強度</Text>
+                        <Text style={styles.workoutCardInfoLabel}>強度</Text>
                         <Text style={styles.workoutCardInfoValue}>
                           {workout.cardio.intensity === 'easy' ? '低' : 
                            workout.cardio.intensity === 'medium' ? '中' : '高'}
@@ -680,7 +680,7 @@ export default function LogScreen() {
                       <View style={styles.workoutCardInfo}>
                         {workout.light.minutes && (
                           <>
-                            <Text style={styles.workoutCardInfoLabel}>⏱️ 時間</Text>
+                            <Text style={styles.workoutCardInfoLabel}>時間</Text>
                             <Text style={styles.workoutCardInfoValue}>{workout.light.minutes}分</Text>
                           </>
                         )}
@@ -688,9 +688,9 @@ export default function LogScreen() {
                     )}
                     {workout.strength && workout.strength.exercises.length > 0 && (
                       <View style={styles.workoutCardInfo}>
-                        <Text style={styles.workoutCardInfoLabel}>📋 種目数</Text>
+                        <Text style={styles.workoutCardInfoLabel}>種目数</Text>
                         <Text style={styles.workoutCardInfoValue}>{workout.strength.exercises.length}種目</Text>
-                        <Text style={styles.workoutCardInfoLabel}>🏋️ 内容</Text>
+                        <Text style={styles.workoutCardInfoLabel}>内容</Text>
                         <Text style={styles.workoutCardInfoValue} numberOfLines={1}>
                           {workout.strength.exercises.slice(0, 2).map(e => e.name).join(', ')}
                           {workout.strength.exercises.length > 2 && ' ...'}
@@ -749,59 +749,85 @@ export default function LogScreen() {
                   startEdit(editingWorkout);
                 }}
               >
-                <Text style={styles.editButtonText}>✏️ 編集</Text>
+                <Text style={styles.editButtonText}>編集</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.deleteButton2}
                 onPress={() => deleteWorkout(editingWorkout.id)}
               >
-                <Text style={styles.deleteButtonText}>🗑️ 削除</Text>
+                <Text style={styles.deleteButtonText}>削除</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {editingWorkout.cardio && (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>有酸素運動</Text>
-              <Text style={styles.detailText}>時間: {editingWorkout.cardio.minutes}分</Text>
-              <Text style={styles.detailText}>
-                強度: {editingWorkout.cardio.intensity === 'easy' ? '低' : editingWorkout.cardio.intensity === 'medium' ? '中' : '高'}
-              </Text>
+              <Text style={styles.detailSectionTitle}>活動内容</Text>
+              <View style={styles.detailInfoGrid}>
+                <View style={styles.detailInfoItem}>
+                  <Text style={styles.detailInfoLabel}>時間</Text>
+                  <Text style={styles.detailInfoValue}>{editingWorkout.cardio.minutes}分</Text>
+                </View>
+                <View style={styles.detailInfoItem}>
+                  <Text style={styles.detailInfoLabel}>強度</Text>
+                  <Text style={styles.detailInfoValue}>
+                    {editingWorkout.cardio.intensity === 'easy' ? '低' : 
+                     editingWorkout.cardio.intensity === 'medium' ? '中' : '高'}
+                  </Text>
+                </View>
+              </View>
             </View>
           )}
 
           {editingWorkout.light && (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>軽めの活動</Text>
-              <Text style={styles.detailText}>種類: {editingWorkout.light.label}</Text>
+              <Text style={styles.detailSectionTitle}>活動内容</Text>
               {editingWorkout.light.minutes && (
-                <Text style={styles.detailText}>時間: {editingWorkout.light.minutes}分</Text>
+                <View style={styles.detailInfoGrid}>
+                  <View style={styles.detailInfoItem}>
+                    <Text style={styles.detailInfoLabel}>時間</Text>
+                    <Text style={styles.detailInfoValue}>{editingWorkout.light.minutes}分</Text>
+                  </View>
+                </View>
               )}
             </View>
           )}
 
           {editingWorkout.strength && editingWorkout.strength.exercises.length > 0 && (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>筋トレ種目</Text>
+              <Text style={styles.detailSectionTitle}>トレーニング内容</Text>
               {editingWorkout.strength.exercises.map((exercise, index) => (
-                <View key={index} style={styles.detailExercise}>
+                <View key={index} style={styles.detailExerciseCard}>
                   <Text style={styles.detailExerciseName}>{exercise.name}</Text>
-                  {exercise.sets.map((set, setIndex) => (
-                    <View key={setIndex} style={styles.detailSet}>
-                      <Text style={styles.detailSetLabel}>{setIndex + 1}セット目</Text>
-                      <View style={styles.detailSetInfo}>
-                        {set.reps !== undefined && (
-                          <Text style={styles.detailSetText}>回数: {set.reps}回</Text>
-                        )}
-                        {set.weightKg !== undefined && (
-                          <Text style={styles.detailSetText}>重量: {set.weightKg}kg</Text>
-                        )}
-                        {set.rpe !== undefined && (
-                          <Text style={styles.detailSetText}>RPE: {set.rpe}</Text>
-                        )}
+                  <View style={styles.detailSetsContainer}>
+                    {exercise.sets.map((set, setIndex) => (
+                      <View key={setIndex} style={styles.detailSetCard}>
+                        <View style={styles.detailSetNumber}>
+                          <Text style={styles.detailSetNumberText}>{setIndex + 1}</Text>
+                        </View>
+                        <View style={styles.detailSetInfo}>
+                          {set.reps !== undefined && (
+                            <View style={styles.detailSetItem}>
+                              <Text style={styles.detailSetItemLabel}>回数</Text>
+                              <Text style={styles.detailSetItemValue}>{set.reps}</Text>
+                            </View>
+                          )}
+                          {set.weightKg !== undefined && (
+                            <View style={styles.detailSetItem}>
+                              <Text style={styles.detailSetItemLabel}>重量</Text>
+                              <Text style={styles.detailSetItemValue}>{set.weightKg}kg</Text>
+                            </View>
+                          )}
+                          {set.rpe !== undefined && (
+                            <View style={styles.detailSetItem}>
+                              <Text style={styles.detailSetItemLabel}>RPE</Text>
+                              <Text style={styles.detailSetItemValue}>{set.rpe}</Text>
+                            </View>
+                          )}
+                        </View>
                       </View>
-                    </View>
-                  ))}
+                    ))}
+                  </View>
                 </View>
               ))}
             </View>
@@ -810,7 +836,9 @@ export default function LogScreen() {
           {editingWorkout.note && (
             <View style={styles.detailSection}>
               <Text style={styles.detailSectionTitle}>メモ</Text>
-              <Text style={styles.detailText}>{editingWorkout.note}</Text>
+              <View style={styles.detailNoteCard}>
+                <Text style={styles.detailNoteText}>{editingWorkout.note}</Text>
+              </View>
             </View>
           )}
         </View>
@@ -1037,37 +1065,41 @@ export default function LogScreen() {
                     {/* 重量入力 */}
                     <View style={styles.setInputRow}>
                       <Text style={styles.inputLabel}>重量(kg)</Text>
-                      <View style={styles.numberInputContainer}>
-                        <TouchableOpacity
-                          style={styles.minusButton}
-                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', -2.5)}
-                        >
-                          <Text style={styles.buttonText}>−</Text>
-                        </TouchableOpacity>
-                        <TextInput
-                          style={styles.numberInput}
-                          value={set.weightKg ? String(set.weightKg) : '0'}
-                          onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'weightKg', text)}
-                          keyboardType="decimal-pad"
-                        />
-                        <TouchableOpacity
-                          style={styles.plusButton}
-                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', 2.5)}
-                        >
-                          <Text style={styles.buttonText}>＋</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.quickButton}
-                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', 5)}
-                        >
-                          <Text style={styles.quickButtonText}>+5</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.quickButton}
-                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', 10)}
-                        >
-                          <Text style={styles.quickButtonText}>+10</Text>
-                        </TouchableOpacity>
+                      <View style={styles.weightInputWrapper}>
+                        <View style={styles.numberInputContainer}>
+                          <TouchableOpacity
+                            style={styles.minusButton}
+                            onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', -2.5)}
+                          >
+                            <Text style={styles.buttonText}>−</Text>
+                          </TouchableOpacity>
+                          <TextInput
+                            style={styles.numberInput}
+                            value={set.weightKg ? String(set.weightKg) : '0'}
+                            onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'weightKg', text)}
+                            keyboardType="decimal-pad"
+                          />
+                          <TouchableOpacity
+                            style={styles.plusButton}
+                            onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', 2.5)}
+                          >
+                            <Text style={styles.buttonText}>＋</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <View style={styles.quickButtonsRow}>
+                          <TouchableOpacity
+                            style={styles.quickButton}
+                            onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', 5)}
+                          >
+                            <Text style={styles.quickButtonText}>+5</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.quickButton}
+                            onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', 10)}
+                          >
+                            <Text style={styles.quickButtonText}>+10</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
 
@@ -1542,6 +1574,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  weightInputWrapper: {
+    flex: 1,
+    gap: 6,
+  },
+  quickButtonsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
   minusButton: {
     backgroundColor: '#ff3b30',
     width: 36,
@@ -1800,50 +1840,103 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   detailSection: {
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
+    marginBottom: 16,
   },
   detailSectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#333',
     marginBottom: 12,
   },
-  detailText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+  detailInfoGrid: {
+    flexDirection: 'row',
+    gap: 12,
   },
-  detailExercise: {
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  detailInfoItem: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  detailExerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  detailSet: {
-    marginBottom: 8,
-    paddingLeft: 12,
-  },
-  detailSetLabel: {
+  detailInfoLabel: {
     fontSize: 12,
     color: '#999',
     marginBottom: 4,
   },
+  detailInfoValue: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+  },
+  detailExerciseCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  detailExerciseName: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  detailSetsContainer: {
+    gap: 8,
+  },
+  detailSetCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 6,
+  },
+  detailSetNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailSetNumberText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
   detailSetInfo: {
+    flex: 1,
     flexDirection: 'row',
     gap: 12,
   },
-  detailSetText: {
-    fontSize: 14,
-    color: '#666',
+  detailSetItem: {
+    alignItems: 'center',
+  },
+  detailSetItemLabel: {
+    fontSize: 11,
+    color: '#999',
+    marginBottom: 2,
+  },
+  detailSetItemValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  detailNoteCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  detailNoteText: {
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 22,
   },
   activitySelectContainer: {
     flexDirection: 'row',
