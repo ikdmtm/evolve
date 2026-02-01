@@ -34,6 +34,7 @@ export default function HistoryScreen() {
   const [dayInfos, setDayInfos] = useState<DayInfo[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedWorkouts, setSelectedWorkouts] = useState<Workout[]>([]);
+  const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [loading, setLoading] = useState(true);
 
   // 画面フォーカス時にデータを再読み込み
@@ -142,6 +143,21 @@ export default function HistoryScreen() {
   function closeModal() {
     setSelectedDate(null);
     setSelectedWorkouts([]);
+    setSelectedWorkout(null);
+  }
+
+  function viewWorkoutDetail(workout: Workout) {
+    setSelectedWorkout(workout);
+  }
+
+  function backToWorkoutList() {
+    setSelectedWorkout(null);
+  }
+
+  function getIntensityLabel(intensity: 'easy' | 'medium' | 'hard'): string {
+    if (intensity === 'easy') return '低';
+    if (intensity === 'medium') return '中';
+    return '高';
   }
 
   function getDayStatusColor(day: DayInfo): string {
@@ -291,65 +307,193 @@ export default function HistoryScreen() {
         <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
           <View style={[styles.modalContent, { backgroundColor: colors.backgroundLight }]}>
             <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-                {selectedDate && formatDateJP(selectedDate)}
-              </Text>
-              <TouchableOpacity onPress={closeModal} style={[styles.closeButton, { backgroundColor: colors.backgroundCard }]}>
-                <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-              {selectedWorkouts.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>記録がありません</Text>
+            
+            {/* ワークアウト詳細表示 */}
+            {selectedWorkout ? (
+              <>
+                <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                  <TouchableOpacity onPress={backToWorkoutList} style={styles.backButtonContainer}>
+                    <Text style={[styles.backButtonText, { color: colors.primary }]}>← 戻る</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={closeModal} style={[styles.closeButton, { backgroundColor: colors.backgroundCard }]}>
+                    <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
+                  </TouchableOpacity>
                 </View>
-              ) : (
-                selectedWorkouts.map((workout) => (
-                  <View key={workout.id} style={[styles.workoutCard, { backgroundColor: colors.backgroundCard }]}>
-                    <View style={styles.workoutHeader}>
-                      <View style={[styles.typeBadge, { backgroundColor: getWorkoutTypeColor(workout.type) }]}>
-                        <Text style={[styles.typeBadgeText, { color: colors.textPrimary }]}>{getWorkoutTypeLabel(workout)}</Text>
+
+                <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                  {/* ヘッダーカード */}
+                  <View style={[styles.detailHeaderCard, { backgroundColor: colors.backgroundCard, borderTopColor: getWorkoutTypeColor(selectedWorkout.type) }]}>
+                    <View style={styles.detailHeaderTop}>
+                      <View style={[styles.detailTypeBadge, { backgroundColor: getWorkoutTypeColor(selectedWorkout.type) }]}>
+                        <Text style={styles.detailTypeIcon}>
+                          {selectedWorkout.type === 'strength' && '💪'}
+                          {selectedWorkout.type === 'cardio' && '🏃'}
+                          {selectedWorkout.type === 'light' && '🧘'}
+                        </Text>
                       </View>
-                      <Text style={[styles.workoutTitle, { color: colors.textPrimary }]}>{workout.title}</Text>
+                      <View style={styles.detailHeaderInfo}>
+                        <Text style={[styles.detailTitle, { color: colors.textPrimary }]}>{selectedWorkout.title || '(タイトルなし)'}</Text>
+                        <Text style={[styles.detailType, { color: colors.textSecondary }]}>
+                          {selectedWorkout.type === 'strength' && '筋トレ'}
+                          {selectedWorkout.type === 'cardio' && '有酸素運動'}
+                          {selectedWorkout.type === 'light' && '軽めの活動'}
+                        </Text>
+                        <Text style={[styles.detailDate, { color: colors.textMuted }]}>{formatDateJP(selectedWorkout.date)}</Text>
+                      </View>
                     </View>
-
-                    {workout.type === 'strength' && workout.strength && (
-                      <View style={[styles.workoutDetails, { borderTopColor: colors.border }]}>
-                        {workout.strength.exercises.map((exercise, i) => (
-                          <View key={i} style={styles.exerciseRow}>
-                            <Text style={[styles.exerciseName, { color: colors.textPrimary }]}>{exercise.name}</Text>
-                            <Text style={[styles.exerciseSets, { color: colors.textSecondary }]}>{exercise.sets.length}セット</Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
-
-                    {workout.type === 'cardio' && workout.cardio && (
-                      <View style={[styles.workoutDetails, { borderTopColor: colors.border }]}>
-                        <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-                          {workout.cardio.minutes}分 • {workout.cardio.intensity}
-                        </Text>
-                      </View>
-                    )}
-
-                    {workout.type === 'light' && workout.light && (
-                      <View style={[styles.workoutDetails, { borderTopColor: colors.border }]}>
-                        <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-                          {workout.light.label}
-                          {workout.light.minutes && ` • ${workout.light.minutes}分`}
-                        </Text>
-                      </View>
-                    )}
-
-                    {workout.note && (
-                      <Text style={[styles.workoutNote, { color: colors.textMuted }]}>{workout.note}</Text>
-                    )}
                   </View>
-                ))
-              )}
-            </ScrollView>
+
+                  {/* 有酸素運動の詳細 */}
+                  {selectedWorkout.type === 'cardio' && selectedWorkout.cardio && (
+                    <View style={[styles.detailSection, { backgroundColor: colors.backgroundCard }]}>
+                      <Text style={[styles.detailSectionTitle, { color: colors.textSecondary }]}>活動内容</Text>
+                      <View style={styles.detailInfoGrid}>
+                        <View style={[styles.detailInfoItem, { backgroundColor: colors.backgroundLight }]}>
+                          <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>時間</Text>
+                          <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]}>{selectedWorkout.cardio.minutes}分</Text>
+                        </View>
+                        <View style={[styles.detailInfoItem, { backgroundColor: colors.backgroundLight }]}>
+                          <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>強度</Text>
+                          <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]}>{getIntensityLabel(selectedWorkout.cardio.intensity)}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* 軽めの活動の詳細 */}
+                  {selectedWorkout.type === 'light' && selectedWorkout.light && (
+                    <View style={[styles.detailSection, { backgroundColor: colors.backgroundCard }]}>
+                      <Text style={[styles.detailSectionTitle, { color: colors.textSecondary }]}>活動内容</Text>
+                      <View style={styles.detailInfoGrid}>
+                        <View style={[styles.detailInfoItem, { backgroundColor: colors.backgroundLight }]}>
+                          <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>種類</Text>
+                          <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]}>{selectedWorkout.light.label}</Text>
+                        </View>
+                        {selectedWorkout.light.minutes && (
+                          <View style={[styles.detailInfoItem, { backgroundColor: colors.backgroundLight }]}>
+                            <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>時間</Text>
+                            <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]}>{selectedWorkout.light.minutes}分</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  )}
+
+                  {/* 筋トレの詳細 */}
+                  {selectedWorkout.type === 'strength' && selectedWorkout.strength && selectedWorkout.strength.exercises.length > 0 && (
+                    <View style={[styles.detailSection, { backgroundColor: colors.backgroundCard }]}>
+                      <Text style={[styles.detailSectionTitle, { color: colors.textSecondary }]}>トレーニング内容</Text>
+                      {selectedWorkout.strength.exercises.map((exercise, index) => (
+                        <View key={index} style={[styles.detailExerciseCard, { backgroundColor: colors.backgroundLight }]}>
+                          <Text style={[styles.detailExerciseName, { color: colors.textPrimary }]}>{exercise.name}</Text>
+                          <View style={styles.detailSetsContainer}>
+                            {exercise.sets.map((set, setIndex) => (
+                              <View key={setIndex} style={[styles.detailSetCard, { backgroundColor: colors.backgroundCard }]}>
+                                <View style={[styles.detailSetNumber, { backgroundColor: colors.primary }]}>
+                                  <Text style={[styles.detailSetNumberText, { color: '#FFFFFF' }]}>{setIndex + 1}</Text>
+                                </View>
+                                <View style={styles.detailSetInfo}>
+                                  {set.reps !== undefined && (
+                                    <View style={styles.detailSetItem}>
+                                      <Text style={[styles.detailSetItemLabel, { color: colors.textMuted }]}>回数</Text>
+                                      <Text style={[styles.detailSetItemValue, { color: colors.textPrimary }]}>{set.reps}</Text>
+                                    </View>
+                                  )}
+                                  {set.weightKg !== undefined && (
+                                    <View style={styles.detailSetItem}>
+                                      <Text style={[styles.detailSetItemLabel, { color: colors.textMuted }]}>重量</Text>
+                                      <Text style={[styles.detailSetItemValue, { color: colors.textPrimary }]}>{set.weightKg}kg</Text>
+                                    </View>
+                                  )}
+                                  {set.rpe !== undefined && (
+                                    <View style={styles.detailSetItem}>
+                                      <Text style={[styles.detailSetItemLabel, { color: colors.textMuted }]}>RPE</Text>
+                                      <Text style={[styles.detailSetItemValue, { color: colors.textPrimary }]}>{set.rpe}</Text>
+                                    </View>
+                                  )}
+                                </View>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* メモ */}
+                  {selectedWorkout.note && (
+                    <View style={[styles.detailSection, { backgroundColor: colors.backgroundCard }]}>
+                      <Text style={[styles.detailSectionTitle, { color: colors.textSecondary }]}>メモ</Text>
+                      <View style={[styles.detailNoteCard, { backgroundColor: colors.backgroundLight }]}>
+                        <Text style={[styles.detailNoteText, { color: colors.textPrimary }]}>{selectedWorkout.note}</Text>
+                      </View>
+                    </View>
+                  )}
+                </ScrollView>
+              </>
+            ) : (
+              <>
+                {/* ワークアウト一覧表示 */}
+                <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                  <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                    {selectedDate && formatDateJP(selectedDate)}
+                  </Text>
+                  <TouchableOpacity onPress={closeModal} style={[styles.closeButton, { backgroundColor: colors.backgroundCard }]}>
+                    <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                  {selectedWorkouts.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                      <Text style={[styles.emptyText, { color: colors.textMuted }]}>記録がありません</Text>
+                    </View>
+                  ) : (
+                    selectedWorkouts.map((workout) => (
+                      <TouchableOpacity 
+                        key={workout.id} 
+                        style={[styles.workoutCard, { backgroundColor: colors.backgroundCard }]}
+                        onPress={() => viewWorkoutDetail(workout)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.workoutHeader}>
+                          <View style={[styles.typeBadge, { backgroundColor: getWorkoutTypeColor(workout.type) }]}>
+                            <Text style={[styles.typeBadgeText, { color: '#FFFFFF' }]}>{getWorkoutTypeLabel(workout)}</Text>
+                          </View>
+                          <Text style={[styles.workoutTitle, { color: colors.textPrimary }]}>{workout.title || '(タイトルなし)'}</Text>
+                          <Text style={[styles.chevron, { color: colors.textMuted }]}>▶</Text>
+                        </View>
+
+                        {workout.type === 'strength' && workout.strength && (
+                          <View style={[styles.workoutDetails, { borderTopColor: colors.border }]}>
+                            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+                              {workout.strength.exercises.length}種目
+                            </Text>
+                          </View>
+                        )}
+
+                        {workout.type === 'cardio' && workout.cardio && (
+                          <View style={[styles.workoutDetails, { borderTopColor: colors.border }]}>
+                            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+                              {workout.cardio.minutes}分 • {getIntensityLabel(workout.cardio.intensity)}
+                            </Text>
+                          </View>
+                        )}
+
+                        {workout.type === 'light' && workout.light && (
+                          <View style={[styles.workoutDetails, { borderTopColor: colors.border }]}>
+                            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+                              {workout.light.label}
+                              {workout.light.minutes && ` • ${workout.light.minutes}分`}
+                            </Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </ScrollView>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -542,14 +686,15 @@ const styles = StyleSheet.create({
     ...shadows.small,
   },
   workoutHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: spacing.sm,
   },
   typeBadge: {
-    alignSelf: 'flex-start',
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.xs,
-    marginBottom: spacing.xs,
+    marginRight: spacing.sm,
   },
   typeBadgeText: {
     fontSize: 10,
@@ -558,6 +703,11 @@ const styles = StyleSheet.create({
   workoutTitle: {
     fontSize: 16,
     fontWeight: '700',
+    flex: 1,
+  },
+  chevron: {
+    fontSize: 12,
+    marginLeft: spacing.sm,
   },
   workoutDetails: {
     marginTop: spacing.xs,
@@ -582,5 +732,139 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: spacing.sm,
     fontStyle: 'italic',
+  },
+  
+  // 戻るボタン
+  backButtonContainer: {
+    paddingVertical: spacing.xs,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  
+  // 詳細表示
+  detailHeaderCard: {
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderTopWidth: 4,
+    ...shadows.small,
+  },
+  detailHeaderTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detailTypeBadge: {
+    width: 50,
+    height: 50,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  detailTypeIcon: {
+    fontSize: 24,
+  },
+  detailHeaderInfo: {
+    flex: 1,
+  },
+  detailTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  detailType: {
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  detailDate: {
+    fontSize: 12,
+  },
+  detailSection: {
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    ...shadows.small,
+  },
+  detailSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailInfoGrid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  detailInfoItem: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    alignItems: 'center',
+  },
+  detailInfoLabel: {
+    fontSize: 12,
+    marginBottom: spacing.xs,
+  },
+  detailInfoValue: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  detailExerciseCard: {
+    padding: spacing.md,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+  },
+  detailExerciseName: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+  },
+  detailSetsContainer: {
+    gap: spacing.xs,
+  },
+  detailSetCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.sm,
+    borderRadius: radius.sm,
+  },
+  detailSetNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
+  detailSetNumberText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  detailSetInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  detailSetItem: {
+    alignItems: 'center',
+  },
+  detailSetItemLabel: {
+    fontSize: 10,
+    marginBottom: 2,
+  },
+  detailSetItemValue: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  detailNoteCard: {
+    padding: spacing.md,
+    borderRadius: radius.md,
+  },
+  detailNoteText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
