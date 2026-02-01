@@ -913,7 +913,7 @@ export default function LogScreen() {
         </View>
 
         <View style={styles.detailContainer}>
-          <View style={[styles.detailHeaderCard, { borderTopColor: typeColor }]}>
+          <View style={[styles.detailHeaderCard, { borderTopColor: typeColor, backgroundColor: themeColors.backgroundCard }]}>
             <View style={styles.detailHeaderTop}>
               <View style={[styles.detailTypeBadge, { backgroundColor: typeColor }]}>
                 <Text style={styles.detailTypeIcon}>
@@ -923,44 +923,44 @@ export default function LogScreen() {
                 </Text>
               </View>
               <View style={styles.detailHeaderInfo}>
-                <Text style={styles.detailTitle}>{editingWorkout.title}</Text>
-                <Text style={styles.detailType}>
+                <Text style={[styles.detailTitle, { color: themeColors.textPrimary }]}>{editingWorkout.title}</Text>
+                <Text style={[styles.detailType, { color: themeColors.textSecondary }]}>
                   {editingWorkout.type === 'strength' && '筋トレ'}
                   {editingWorkout.type === 'cardio' && '有酸素運動'}
                   {editingWorkout.type === 'light' && '軽めの活動'}
                 </Text>
-                <Text style={styles.detailDate}>{formatDateJP(editingWorkout.date)}</Text>
+                <Text style={[styles.detailDate, { color: themeColors.textMuted }]}>{formatDateJP(editingWorkout.date)}</Text>
               </View>
             </View>
             <View style={styles.detailActions}>
               <TouchableOpacity
-                style={styles.editButton2}
+                style={[styles.editButton2, { backgroundColor: themeColors.primary }]}
                 onPress={() => {
                   startEdit(editingWorkout);
                 }}
               >
-                <Text style={styles.editButtonText}>編集</Text>
+                <Text style={[styles.editButtonText, { color: themeColors.textPrimary }]}>編集</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.deleteButton2}
+                style={[styles.deleteButton2, { backgroundColor: themeColors.danger }]}
                 onPress={() => deleteWorkout(editingWorkout.id)}
               >
-                <Text style={styles.deleteButtonText}>削除</Text>
+                <Text style={[styles.deleteButtonText, { color: themeColors.textPrimary }]}>削除</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {editingWorkout.cardio && (
-            <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>活動内容</Text>
+            <View style={[styles.detailSection, { backgroundColor: themeColors.backgroundCard }]}>
+              <Text style={[styles.detailSectionTitle, { color: themeColors.textSecondary }]}>活動内容</Text>
               <View style={styles.detailInfoGrid}>
-                <View style={styles.detailInfoItem}>
-                  <Text style={styles.detailInfoLabel}>時間</Text>
-                  <Text style={styles.detailInfoValue}>{editingWorkout.cardio.minutes}分</Text>
+                <View style={[styles.detailInfoItem, { backgroundColor: themeColors.backgroundLight }]}>
+                  <Text style={[styles.detailInfoLabel, { color: themeColors.textMuted }]}>時間</Text>
+                  <Text style={[styles.detailInfoValue, { color: themeColors.textPrimary }]}>{editingWorkout.cardio.minutes}分</Text>
                 </View>
-                <View style={styles.detailInfoItem}>
-                  <Text style={styles.detailInfoLabel}>強度</Text>
-                  <Text style={styles.detailInfoValue}>
+                <View style={[styles.detailInfoItem, { backgroundColor: themeColors.backgroundLight }]}>
+                  <Text style={[styles.detailInfoLabel, { color: themeColors.textMuted }]}>強度</Text>
+                  <Text style={[styles.detailInfoValue, { color: themeColors.textPrimary }]}>
                     {editingWorkout.cardio.intensity === 'easy' ? '低' : 
                      editingWorkout.cardio.intensity === 'medium' ? '中' : '高'}
                   </Text>
@@ -970,13 +970,13 @@ export default function LogScreen() {
           )}
 
           {editingWorkout.light && (
-            <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>活動内容</Text>
+            <View style={[styles.detailSection, { backgroundColor: themeColors.backgroundCard }]}>
+              <Text style={[styles.detailSectionTitle, { color: themeColors.textSecondary }]}>活動内容</Text>
               {editingWorkout.light.minutes && (
                 <View style={styles.detailInfoGrid}>
-                  <View style={styles.detailInfoItem}>
-                    <Text style={styles.detailInfoLabel}>時間</Text>
-                    <Text style={styles.detailInfoValue}>{editingWorkout.light.minutes}分</Text>
+                  <View style={[styles.detailInfoItem, { backgroundColor: themeColors.backgroundLight }]}>
+                    <Text style={[styles.detailInfoLabel, { color: themeColors.textMuted }]}>時間</Text>
+                    <Text style={[styles.detailInfoValue, { color: themeColors.textPrimary }]}>{editingWorkout.light.minutes}分</Text>
                   </View>
                 </View>
               )}
@@ -984,34 +984,34 @@ export default function LogScreen() {
           )}
 
           {editingWorkout.strength && editingWorkout.strength.exercises.length > 0 && (
-            <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>トレーニング内容</Text>
+            <View style={[styles.detailSection, { backgroundColor: themeColors.backgroundCard }]}>
+              <Text style={[styles.detailSectionTitle, { color: themeColors.textSecondary }]}>トレーニング内容</Text>
               {editingWorkout.strength.exercises.map((exercise, index) => (
-                <View key={index} style={styles.detailExerciseCard}>
-                  <Text style={styles.detailExerciseName}>{exercise.name}</Text>
+                <View key={index} style={[styles.detailExerciseCard, { backgroundColor: themeColors.backgroundLight }]}>
+                  <Text style={[styles.detailExerciseName, { color: themeColors.textPrimary }]}>{exercise.name}</Text>
                   <View style={styles.detailSetsContainer}>
                     {exercise.sets.map((set, setIndex) => (
-                      <View key={setIndex} style={styles.detailSetCard}>
-                        <View style={styles.detailSetNumber}>
-                          <Text style={styles.detailSetNumberText}>{setIndex + 1}</Text>
+                      <View key={setIndex} style={[styles.detailSetCard, { backgroundColor: themeColors.backgroundCard }]}>
+                        <View style={[styles.detailSetNumber, { backgroundColor: themeColors.primary }]}>
+                          <Text style={[styles.detailSetNumberText, { color: themeColors.textPrimary }]}>{setIndex + 1}</Text>
                         </View>
                         <View style={styles.detailSetInfo}>
                           {set.reps !== undefined && (
                             <View style={styles.detailSetItem}>
-                              <Text style={styles.detailSetItemLabel}>回数</Text>
-                              <Text style={styles.detailSetItemValue}>{set.reps}</Text>
+                              <Text style={[styles.detailSetItemLabel, { color: themeColors.textMuted }]}>回数</Text>
+                              <Text style={[styles.detailSetItemValue, { color: themeColors.textPrimary }]}>{set.reps}</Text>
                             </View>
                           )}
                           {set.weightKg !== undefined && (
                             <View style={styles.detailSetItem}>
-                              <Text style={styles.detailSetItemLabel}>重量</Text>
-                              <Text style={styles.detailSetItemValue}>{set.weightKg}kg</Text>
+                              <Text style={[styles.detailSetItemLabel, { color: themeColors.textMuted }]}>重量</Text>
+                              <Text style={[styles.detailSetItemValue, { color: themeColors.textPrimary }]}>{set.weightKg}kg</Text>
                             </View>
                           )}
                           {set.rpe !== undefined && (
                             <View style={styles.detailSetItem}>
-                              <Text style={styles.detailSetItemLabel}>RPE</Text>
-                              <Text style={styles.detailSetItemValue}>{set.rpe}</Text>
+                              <Text style={[styles.detailSetItemLabel, { color: themeColors.textMuted }]}>RPE</Text>
+                              <Text style={[styles.detailSetItemValue, { color: themeColors.textPrimary }]}>{set.rpe}</Text>
                             </View>
                           )}
                         </View>
@@ -1024,10 +1024,10 @@ export default function LogScreen() {
           )}
 
           {editingWorkout.note && (
-            <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>メモ</Text>
-              <View style={styles.detailNoteCard}>
-                <Text style={styles.detailNoteText}>{editingWorkout.note}</Text>
+            <View style={[styles.detailSection, { backgroundColor: themeColors.backgroundCard }]}>
+              <Text style={[styles.detailSectionTitle, { color: themeColors.textSecondary }]}>メモ</Text>
+              <View style={[styles.detailNoteCard, { backgroundColor: themeColors.backgroundLight }]}>
+                <Text style={[styles.detailNoteText, { color: themeColors.textPrimary }]}>{editingWorkout.note}</Text>
               </View>
             </View>
           )}
@@ -1359,18 +1359,19 @@ export default function LogScreen() {
           </>
         )}
 
-        <Text style={styles.label}>メモ（任意）</Text>
+        <Text style={[styles.label, { color: themeColors.textSecondary }]}>メモ（任意）</Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
+          style={[styles.input, styles.textArea, { backgroundColor: themeColors.backgroundLight, color: themeColors.textPrimary, borderColor: themeColors.border }]}
           value={note}
           onChangeText={setNote}
           placeholder="メモを入力..."
+          placeholderTextColor={themeColors.textMuted}
           multiline
           numberOfLines={3}
         />
 
-        <TouchableOpacity style={styles.saveButton} onPress={saveWorkout}>
-          <Text style={styles.saveButtonText}>保存</Text>
+        <TouchableOpacity style={[styles.saveButton, { backgroundColor: themeColors.primary }]} onPress={saveWorkout}>
+          <Text style={[styles.saveButtonText, { color: themeColors.textPrimary }]}>保存</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
