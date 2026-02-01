@@ -504,28 +504,30 @@ export default function LogScreen() {
   // 前回の記録を取得
   async function loadPreviousRecord(exerciseName: string): Promise<Array<{ reps?: number; weightKg?: number; rpe?: number; }> | null> {
     try {
-      // 今日より前の記録を取得（最大30日前まで）
+      // 過去30日分の記録を取得
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const startDate = `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`;
       
       console.log('[loadPreviousRecord] exerciseName:', exerciseName);
       console.log('[loadPreviousRecord] dateRange:', startDate, 'to', today);
+      console.log('[loadPreviousRecord] editingWorkout?.id:', editingWorkout?.id);
       
       const pastWorkouts = await repo.getByDateRange(startDate, today);
       console.log('[loadPreviousRecord] total pastWorkouts:', pastWorkouts.length);
       
-      // 今日の記録は除外
-      const filteredWorkouts = pastWorkouts.filter(w => w.date !== today);
-      console.log('[loadPreviousRecord] filtered (excluding today):', filteredWorkouts.length);
+      // 現在編集中のワークアウトは除外（新規作成時はundefinedなので全て含まれる）
+      const filteredWorkouts = pastWorkouts.filter(w => w.id !== editingWorkout?.id);
+      console.log('[loadPreviousRecord] filtered (excluding current editing):', filteredWorkouts.length);
       
-      // 同じ種目の最新の記録を探す
+      // 同じ種目の最新の記録を探す（新しい順にソート済み）
       for (let i = filteredWorkouts.length - 1; i >= 0; i--) {
         const workout = filteredWorkouts[i];
         if (workout.strength && workout.strength.exercises) {
           const exercise = workout.strength.exercises.find(e => e.name === exerciseName);
           if (exercise && exercise.sets.length > 0) {
-            console.log('[loadPreviousRecord] found exercise:', exercise.name, 'with sets:', exercise.sets);
+            console.log('[loadPreviousRecord] found exercise:', exercise.name, 'from workout:', workout.id, 'date:', workout.date);
+            console.log('[loadPreviousRecord] sets:', exercise.sets);
             // 前回の記録を保存して返す
             setPreviousRecords(prev => new Map(prev).set(exerciseName, exercise.sets));
             return exercise.sets;
