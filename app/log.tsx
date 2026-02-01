@@ -13,7 +13,7 @@ import { WorkoutRepository } from '../src/core/storage/WorkoutRepository';
 import type { Workout, WorkoutType } from '../src/core/domain/models';
 import { getTodayDate, generateId, formatDateJP } from '../src/utils/date';
 
-type FormMode = 'list' | 'create' | 'edit';
+type FormMode = 'list' | 'detail' | 'create' | 'edit';
 
 // 筋トレ種目リスト（フリーウエイト・マシン網羅）
 const EXERCISE_PRESETS = [
@@ -187,6 +187,7 @@ export default function LogScreen() {
   const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null);
   const [customExerciseName, setCustomExerciseName] = useState('');
   const [isCustomMode, setIsCustomMode] = useState(false);
+  const [exerciseSearchQuery, setExerciseSearchQuery] = useState('');
 
   const repo = new WorkoutRepository();
   const today = getTodayDate();
@@ -208,6 +209,11 @@ export default function LogScreen() {
     setSelectedType(type);
     setMode('create');
     resetForm();
+  }
+
+  function viewDetail(workout: Workout) {
+    setEditingWorkout(workout);
+    setMode('detail');
   }
 
   function resetForm() {
@@ -314,7 +320,23 @@ export default function LogScreen() {
     setEditingExerciseIndex(index);
     setCustomExerciseName('');
     setIsCustomMode(false);
+    setExerciseSearchQuery('');
     setShowExerciseModal(true);
+  }
+
+  // 検索クエリで種目をフィルタリング
+  function getFilteredExercises() {
+    if (!exerciseSearchQuery.trim()) {
+      return EXERCISE_PRESETS;
+    }
+
+    const query = exerciseSearchQuery.toLowerCase();
+    return EXERCISE_PRESETS.map(category => ({
+      category: category.category,
+      exercises: category.exercises.filter(exercise =>
+        exercise.toLowerCase().includes(query)
+      ),
+    })).filter(category => category.exercises.length > 0);
   }
 
   function selectExercise(name: string) {
@@ -449,7 +471,7 @@ export default function LogScreen() {
               <TouchableOpacity
                 key={workout.id}
                 style={styles.workoutItem}
-                onPress={() => startEdit(workout)}
+                onPress={() => viewDetail(workout)}
               >
                 <View style={styles.workoutHeader}>
                   <Text style={styles.workoutType}>
@@ -457,7 +479,12 @@ export default function LogScreen() {
                     {workout.type === 'cardio' && '🏃 有酸素'}
                     {workout.type === 'light' && '🧘 軽め'}
                   </Text>
-                  <TouchableOpacity onPress={() => deleteWorkout(workout.id)}>
+                  <TouchableOpacity 
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      deleteWorkout(workout.id);
+                    }}
+                  >
                     <Text style={styles.deleteButton}>削除</Text>
                   </TouchableOpacity>
                 </View>
@@ -483,6 +510,103 @@ export default function LogScreen() {
                 )}
               </TouchableOpacity>
             ))
+          )}
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // 詳細表示画面
+  if (mode === 'detail' && editingWorkout) {
+    return (
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => { setMode('list'); setEditingWorkout(null); }}>
+            <Text style={styles.backButton}>← 戻る</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>記録詳細</Text>
+        </View>
+
+        <View style={styles.detailContainer}>
+          <View style={styles.detailHeader}>
+            <Text style={styles.detailType}>
+              {editingWorkout.type === 'strength' && '💪 筋トレ'}
+              {editingWorkout.type === 'cardio' && '🏃 有酸素'}
+              {editingWorkout.type === 'light' && '🧘 軽め'}
+            </Text>
+            <View style={styles.detailActions}>
+              <TouchableOpacity
+                style={styles.editButton2}
+                onPress={() => {
+                  startEdit(editingWorkout);
+                }}
+              >
+                <Text style={styles.editButtonText}>編集</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteButton2}
+                onPress={() => deleteWorkout(editingWorkout.id)}
+              >
+                <Text style={styles.deleteButtonText}>削除</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <Text style={styles.detailTitle}>{editingWorkout.title}</Text>
+          <Text style={styles.detailDate}>{formatDateJP(editingWorkout.date)}</Text>
+
+          {editingWorkout.cardio && (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>有酸素運動</Text>
+              <Text style={styles.detailText}>時間: {editingWorkout.cardio.minutes}分</Text>
+              <Text style={styles.detailText}>
+                強度: {editingWorkout.cardio.intensity === 'easy' ? '低' : editingWorkout.cardio.intensity === 'medium' ? '中' : '高'}
+              </Text>
+            </View>
+          )}
+
+          {editingWorkout.light && (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>軽めの活動</Text>
+              <Text style={styles.detailText}>種類: {editingWorkout.light.label}</Text>
+              {editingWorkout.light.minutes && (
+                <Text style={styles.detailText}>時間: {editingWorkout.light.minutes}分</Text>
+              )}
+            </View>
+          )}
+
+          {editingWorkout.strength && editingWorkout.strength.exercises.length > 0 && (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>筋トレ種目</Text>
+              {editingWorkout.strength.exercises.map((exercise, index) => (
+                <View key={index} style={styles.detailExercise}>
+                  <Text style={styles.detailExerciseName}>{exercise.name}</Text>
+                  {exercise.sets.map((set, setIndex) => (
+                    <View key={setIndex} style={styles.detailSet}>
+                      <Text style={styles.detailSetLabel}>{setIndex + 1}セット目</Text>
+                      <View style={styles.detailSetInfo}>
+                        {set.reps !== undefined && (
+                          <Text style={styles.detailSetText}>回数: {set.reps}回</Text>
+                        )}
+                        {set.weightKg !== undefined && (
+                          <Text style={styles.detailSetText}>重量: {set.weightKg}kg</Text>
+                        )}
+                        {set.rpe !== undefined && (
+                          <Text style={styles.detailSetText}>RPE: {set.rpe}</Text>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
+          )}
+
+          {editingWorkout.note && (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>メモ</Text>
+              <Text style={styles.detailText}>{editingWorkout.note}</Text>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -731,8 +855,26 @@ export default function LogScreen() {
             </TouchableOpacity>
           </View>
 
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              value={exerciseSearchQuery}
+              onChangeText={setExerciseSearchQuery}
+              placeholder="種目を検索..."
+              autoCapitalize="none"
+            />
+            {exerciseSearchQuery.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearSearchButton}
+                onPress={() => setExerciseSearchQuery('')}
+              >
+                <Text style={styles.clearSearchText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           <ScrollView style={styles.modalScroll}>
-            {EXERCISE_PRESETS.map((category) => (
+            {getFilteredExercises().map((category) => (
               <View key={category.category} style={styles.categoryContainer}>
                 <Text style={styles.categoryTitle}>{category.category}</Text>
                 {category.exercises.map((exercise) => (
@@ -984,6 +1126,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   numberInput: {
+    minWidth: 70,
     flex: 1,
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
@@ -1119,5 +1262,124 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  searchContainer: {
+    padding: 16,
+    paddingTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  searchInput: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  clearSearchButton: {
+    position: 'absolute',
+    right: 24,
+    top: 20,
+  },
+  clearSearchText: {
+    fontSize: 18,
+    color: '#666',
+  },
+  detailContainer: {
+    padding: 16,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  detailType: {
+    fontSize: 14,
+    color: '#666',
+  },
+  detailActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  editButton2: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  editButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  deleteButton2: {
+    backgroundColor: '#ff3b30',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  detailTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  detailDate: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 24,
+  },
+  detailSection: {
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+  },
+  detailSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  detailText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  detailExercise: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  detailExerciseName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  detailSet: {
+    marginBottom: 8,
+    paddingLeft: 12,
+  },
+  detailSetLabel: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 4,
+  },
+  detailSetInfo: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  detailSetText: {
+    fontSize: 14,
+    color: '#666',
   },
 });
