@@ -182,15 +182,15 @@ export default function HomeScreen() {
         <Text style={styles.infoTitle}>レベルシステム</Text>
         <View style={styles.infoList}>
           <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>🔥</Text>
+            <View style={styles.infoBullet} />
             <Text style={styles.infoText}>活動するとレベルUP</Text>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>💤</Text>
+            <View style={styles.infoBullet} />
             <Text style={styles.infoText}>何もしないとレベルDOWN</Text>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>🌙</Text>
+            <View style={styles.infoBullet} />
             <Text style={styles.infoText}>休息日はキープ</Text>
           </View>
         </View>
@@ -423,11 +423,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  infoIcon: {
-    fontSize: 18,
+  infoBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
     marginRight: spacing.sm,
-    width: 28,
-    textAlign: 'center',
   },
   infoText: {
     fontSize: 13,
