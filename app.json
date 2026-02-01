@@ -14,7 +14,11 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.fitmorph.app"
+      "bundleIdentifier": "com.fitmorph.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "このアプリはカメラを使用しません",
+        "NSPhotoLibraryUsageDescription": "このアプリは写真ライブラリを使用しません"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,10 +32,16 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-dev-client"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
     }
   }
 }
