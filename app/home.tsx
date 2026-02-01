@@ -5,9 +5,11 @@ import { WorkoutRepository } from '../src/core/storage/WorkoutRepository';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
 import { SettingsRepository } from '../src/core/storage/SettingsRepository';
 import { getTodayDate, formatDateJP } from '../src/utils/date';
-import { colors, getLevelColor, shadows, radius, spacing } from '../src/theme/colors';
+import { getLevelColor, shadows, radius, spacing } from '../src/theme/colors';
+import { useTheme } from '../src/context/ThemeContext';
 
 export default function HomeScreen() {
+  const { colors } = useTheme();
   const [currentDate, setCurrentDate] = useState(getTodayDate());
   const [level, setLevel] = useState<number>(0);
   const [isRestDay, setIsRestDay] = useState(false);
@@ -89,62 +91,62 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>読み込み中...</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>読み込み中...</Text>
       </View>
     );
   }
 
-  const levelColor = getLevelColor(level);
+  const levelColor = getLevelColor(level, colors);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* 日付ナビゲーション */}
       <View style={styles.dateNav}>
         <TouchableOpacity 
-          style={styles.navButton} 
+          style={[styles.navButton, { backgroundColor: colors.backgroundCard }]} 
           onPress={() => navigateDate(-1)}
           activeOpacity={0.7}
         >
-          <Text style={styles.navButtonText}>◀</Text>
+          <Text style={[styles.navButtonText, { color: colors.primary }]}>◀</Text>
         </TouchableOpacity>
         
         <View style={styles.dateContainer}>
-          <Text style={styles.dateText}>{formatDateJP(currentDate)}</Text>
+          <Text style={[styles.dateText, { color: colors.textPrimary }]}>{formatDateJP(currentDate)}</Text>
           {currentDate !== today && (
-            <TouchableOpacity onPress={goToToday} style={styles.todayButton}>
-              <Text style={styles.todayButtonText}>今日に戻る</Text>
+            <TouchableOpacity onPress={goToToday} style={[styles.todayButton, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.todayButtonText, { color: colors.textPrimary }]}>今日に戻る</Text>
             </TouchableOpacity>
           )}
           {currentDate === today && (
-            <View style={styles.todayBadge}>
-              <Text style={styles.todayBadgeText}>TODAY</Text>
+            <View style={[styles.todayBadge, { backgroundColor: colors.accent }]}>
+              <Text style={[styles.todayBadgeText, { color: colors.background }]}>TODAY</Text>
             </View>
           )}
         </View>
         
         <TouchableOpacity 
-          style={[styles.navButton, currentDate >= today && styles.navButtonDisabled]} 
+          style={[styles.navButton, { backgroundColor: colors.backgroundCard }, currentDate >= today && { backgroundColor: colors.backgroundLight, opacity: 0.5 }]} 
           onPress={() => navigateDate(1)}
           disabled={currentDate >= today}
           activeOpacity={0.7}
         >
-          <Text style={[styles.navButtonText, currentDate >= today && styles.navButtonTextDisabled]}>
+          <Text style={[styles.navButtonText, { color: colors.primary }, currentDate >= today && { color: colors.textMuted }]}>
             ▶
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* メインカード - キャラクター & レベル */}
-      <View style={styles.mainCard}>
+      <View style={[styles.mainCard, { backgroundColor: colors.backgroundCard }]}>
         {/* キャラクター表示エリア */}
         <View style={styles.characterArea}>
-          <View style={[styles.characterCircle, { borderColor: levelColor }]}>
+          <View style={[styles.characterCircle, { borderColor: levelColor, backgroundColor: colors.backgroundLight }]}>
             <Text style={styles.characterEmoji}>
               {level >= 8 ? '🦁' : level >= 5 ? '🐕' : level >= 2 ? '🐱' : '🐣'}
             </Text>
           </View>
-          <View style={styles.levelBadge}>
+          <View style={[styles.levelBadge, { backgroundColor: colors.background, borderColor: colors.backgroundCard }]}>
             <Text style={[styles.levelBadgeText, { color: levelColor }]}>Lv.{level}</Text>
           </View>
         </View>
@@ -152,16 +154,17 @@ export default function HomeScreen() {
         {/* レベルバー */}
         <View style={styles.levelSection}>
           <View style={styles.levelHeader}>
-            <Text style={styles.levelLabel}>レベル進捗</Text>
+            <Text style={[styles.levelLabel, { color: colors.textSecondary }]}>レベル進捗</Text>
             <Text style={[styles.levelValue, { color: levelColor }]}>{level}/10</Text>
           </View>
           <View style={styles.levelBarContainer}>
-            <View style={styles.levelBarBackground}>
+            <View style={[styles.levelBarBackground, { backgroundColor: colors.backgroundLight }]}>
               {[...Array(11)].map((_, i) => (
                 <View
                   key={i}
                   style={[
                     styles.levelSegment,
+                    { backgroundColor: colors.border },
                     i <= level && { backgroundColor: levelColor },
                   ]}
                 />
@@ -169,20 +172,20 @@ export default function HomeScreen() {
             </View>
           </View>
           <View style={styles.levelLabels}>
-            <Text style={styles.levelLabelText}>0</Text>
-            <Text style={styles.levelLabelText}>5</Text>
-            <Text style={styles.levelLabelText}>10</Text>
+            <Text style={[styles.levelLabelText, { color: colors.textMuted }]}>0</Text>
+            <Text style={[styles.levelLabelText, { color: colors.textMuted }]}>5</Text>
+            <Text style={[styles.levelLabelText, { color: colors.textMuted }]}>10</Text>
           </View>
         </View>
       </View>
 
       {/* 状態カード */}
-      <View style={[styles.statusCard, { borderLeftColor: getStatusColor() }]}>
-        <View style={styles.statusIconContainer}>
+      <View style={[styles.statusCard, { backgroundColor: colors.backgroundCard, borderLeftColor: getStatusColor() }]}>
+        <View style={[styles.statusIconContainer, { backgroundColor: colors.backgroundLight }]}>
           <Text style={styles.statusIcon}>{getStatusIcon()}</Text>
         </View>
         <View style={styles.statusInfo}>
-          <Text style={styles.statusLabel}>本日のステータス</Text>
+          <Text style={[styles.statusLabel, { color: colors.textMuted }]}>本日のステータス</Text>
           <Text style={[styles.statusText, { color: getStatusColor() }]}>
             {getStatusText()}
           </Text>
@@ -190,20 +193,20 @@ export default function HomeScreen() {
       </View>
 
       {/* 説明カード */}
-      <View style={styles.infoCard}>
-        <Text style={styles.infoTitle}>レベルシステム</Text>
+      <View style={[styles.infoCard, { backgroundColor: colors.backgroundCard }]}>
+        <Text style={[styles.infoTitle, { color: colors.textPrimary }]}>レベルシステム</Text>
         <View style={styles.infoList}>
           <View style={styles.infoItem}>
-            <View style={styles.infoBullet} />
-            <Text style={styles.infoText}>活動するとレベルUP</Text>
+            <View style={[styles.infoBullet, { backgroundColor: colors.primary }]} />
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>活動するとレベルUP</Text>
           </View>
           <View style={styles.infoItem}>
-            <View style={styles.infoBullet} />
-            <Text style={styles.infoText}>何もしないとレベルDOWN</Text>
+            <View style={[styles.infoBullet, { backgroundColor: colors.primary }]} />
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>何もしないとレベルDOWN</Text>
           </View>
           <View style={styles.infoItem}>
-            <View style={styles.infoBullet} />
-            <Text style={styles.infoText}>休息日はキープ</Text>
+            <View style={[styles.infoBullet, { backgroundColor: colors.primary }]} />
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>休息日はキープ</Text>
           </View>
         </View>
       </View>
@@ -214,7 +217,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   content: {
     padding: spacing.lg,
@@ -222,7 +224,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 100,
   },
@@ -238,22 +239,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radius.full,
-    backgroundColor: colors.backgroundCard,
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.small,
   },
-  navButtonDisabled: {
-    backgroundColor: colors.backgroundLight,
-    opacity: 0.5,
-  },
   navButtonText: {
     fontSize: 16,
-    color: colors.primary,
     fontWeight: '600',
-  },
-  navButtonTextDisabled: {
-    color: colors.textMuted,
   },
   dateContainer: {
     alignItems: 'center',
@@ -261,38 +253,32 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.textPrimary,
     letterSpacing: 0.5,
   },
   todayButton: {
     marginTop: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    backgroundColor: colors.primary,
     borderRadius: radius.full,
   },
   todayButtonText: {
     fontSize: 12,
-    color: colors.textPrimary,
     fontWeight: '600',
   },
   todayBadge: {
     marginTop: spacing.xs,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    backgroundColor: colors.accent,
     borderRadius: radius.xs,
   },
   todayBadgeText: {
     fontSize: 10,
-    color: colors.background,
     fontWeight: '800',
     letterSpacing: 1,
   },
 
   // メインカード
   mainCard: {
-    backgroundColor: colors.backgroundCard,
     borderRadius: radius.xl,
     padding: spacing.xl,
     marginBottom: spacing.lg,
@@ -307,7 +293,6 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     borderWidth: 4,
-    backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.large,
@@ -319,10 +304,8 @@ const styles = StyleSheet.create({
     marginTop: -16,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,
-    backgroundColor: colors.background,
     borderRadius: radius.full,
     borderWidth: 2,
-    borderColor: colors.backgroundCard,
   },
   levelBadgeText: {
     fontSize: 18,
@@ -342,7 +325,6 @@ const styles = StyleSheet.create({
   },
   levelLabel: {
     fontSize: 14,
-    color: colors.textSecondary,
     fontWeight: '600',
   },
   levelValue: {
@@ -355,14 +337,12 @@ const styles = StyleSheet.create({
   levelBarBackground: {
     flexDirection: 'row',
     gap: 3,
-    backgroundColor: colors.backgroundLight,
     borderRadius: radius.sm,
     padding: 4,
   },
   levelSegment: {
     flex: 1,
     height: 16,
-    backgroundColor: colors.border,
     borderRadius: radius.xs,
   },
   levelLabels: {
@@ -372,7 +352,6 @@ const styles = StyleSheet.create({
   },
   levelLabelText: {
     fontSize: 10,
-    color: colors.textMuted,
     fontWeight: '600',
   },
 
@@ -380,7 +359,6 @@ const styles = StyleSheet.create({
   statusCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundCard,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -391,7 +369,6 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: radius.md,
-    backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
@@ -404,7 +381,6 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 12,
-    color: colors.textMuted,
     fontWeight: '600',
     marginBottom: 4,
     textTransform: 'uppercase',
@@ -417,7 +393,6 @@ const styles = StyleSheet.create({
 
   // 説明カード
   infoCard: {
-    backgroundColor: colors.backgroundCard,
     borderRadius: radius.lg,
     padding: spacing.lg,
     ...shadows.small,
@@ -425,7 +400,6 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.textPrimary,
     marginBottom: spacing.md,
   },
   infoList: {
@@ -439,12 +413,10 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.primary,
     marginRight: spacing.sm,
   },
   infoText: {
     fontSize: 13,
-    color: colors.textSecondary,
     fontWeight: '500',
   },
 });

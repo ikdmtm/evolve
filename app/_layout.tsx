@@ -5,6 +5,7 @@ import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { initDatabase } from '../src/core/storage/db';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
+import { darkColors } from '../src/theme/colors';
 
 function RootLayoutContent() {
   const { theme, colors } = useTheme();
@@ -100,22 +101,16 @@ export default function RootLayout() {
     setupDatabase();
   }, []);
 
+  // DB初期化中はThemeProviderなしでローディング表示（警告回避）
   if (error) {
-    return (
-      <ThemeProvider>
-        <ErrorScreen error={error} />
-      </ThemeProvider>
-    );
+    return <ErrorScreen error={error} />;
   }
 
   if (!isDbReady) {
-    return (
-      <ThemeProvider>
-        <LoadingScreen />
-      </ThemeProvider>
-    );
+    return <LoadingScreen />;
   }
 
+  // DB初期化完了後にThemeProviderをマウント
   return (
     <ThemeProvider>
       <RootLayoutContent />
@@ -123,23 +118,22 @@ export default function RootLayout() {
   );
 }
 
+// DB初期化前は静的な色を使用（ThemeProviderなし）
 function LoadingScreen() {
-  const { colors } = useTheme();
-  
   return (
-    <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-      <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={[styles.loadingText, { color: colors.textSecondary }]}>読み込み中...</Text>
+    <View style={[styles.loadingContainer, { backgroundColor: darkColors.background }]}>
+      <StatusBar style="light" />
+      <ActivityIndicator size="large" color={darkColors.primary} />
+      <Text style={[styles.loadingText, { color: darkColors.textSecondary }]}>読み込み中...</Text>
     </View>
   );
 }
 
 function ErrorScreen({ error }: { error: string }) {
-  const { colors } = useTheme();
-  
   return (
-    <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
-      <Text style={[styles.errorText, { color: colors.danger }]}>
+    <View style={[styles.errorContainer, { backgroundColor: darkColors.background }]}>
+      <StatusBar style="light" />
+      <Text style={[styles.errorText, { color: darkColors.danger }]}>
         データベース初期化エラー:{'\n'}{error}
       </Text>
     </View>
