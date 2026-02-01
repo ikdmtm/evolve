@@ -15,7 +15,11 @@ import { DayStateRepository } from '../src/core/storage/DayStateRepository';
 import { SettingsRepository } from '../src/core/storage/SettingsRepository';
 import type { Workout, WorkoutType } from '../src/core/domain/models';
 import { getTodayDate, generateId, formatDateJP } from '../src/utils/date';
-import { colors, shadows, radius, spacing } from '../src/theme/colors';
+import { shadows, radius, spacing, darkColors } from '../src/theme/colors';
+import { useTheme } from '../src/context/ThemeContext';
+
+// StyleSheet用の静的カラー
+const colors = darkColors;
 
 type FormMode = 'list' | 'detail' | 'create' | 'edit';
 
@@ -230,6 +234,7 @@ const LIGHT_PRESETS = [
 ];
 
 export default function LogScreen() {
+  const { colors: themeColors } = useTheme();
   const [mode, setMode] = useState<FormMode>('list');
   const [selectedType, setSelectedType] = useState<WorkoutType>('strength');
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -775,10 +780,10 @@ export default function LogScreen() {
 
   if (mode === 'list') {
     return (
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>記録</Text>
-          <Text style={styles.date}>{formatDateJP(today)}</Text>
+      <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <View style={[styles.header, { backgroundColor: themeColors.backgroundLight }]}>
+          <Text style={[styles.title, { color: themeColors.textPrimary }]}>記録</Text>
+          <Text style={[styles.date, { color: themeColors.textSecondary }]}>{formatDateJP(today)}</Text>
         </View>
 
         <View style={styles.typeSelector}>
@@ -899,12 +904,12 @@ export default function LogScreen() {
       editingWorkout.type === 'cardio' ? '#61DDAA' : '#F6BD16';
     
     return (
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
+      <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <View style={[styles.header, { backgroundColor: themeColors.backgroundLight }]}>
           <TouchableOpacity onPress={() => { setMode('list'); setEditingWorkout(null); }}>
-            <Text style={styles.backButton}>← 戻る</Text>
+            <Text style={[styles.backButton, { color: themeColors.primary }]}>← 戻る</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>記録詳細</Text>
+          <Text style={[styles.title, { color: themeColors.textPrimary }]}>記録詳細</Text>
         </View>
 
         <View style={styles.detailContainer}>
@@ -1034,12 +1039,12 @@ export default function LogScreen() {
   // 作成・編集フォーム
   return (
     <>
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <View style={[styles.header, { backgroundColor: themeColors.backgroundLight }]}>
         <TouchableOpacity onPress={() => { setMode('list'); setEditingWorkout(null); }}>
-          <Text style={styles.backButton}>← 戻る</Text>
+          <Text style={[styles.backButton, { color: themeColors.primary }]}>← 戻る</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: themeColors.textPrimary }]}>
           {editingWorkout ? '編集' : '新規作成'} - {' '}
           {selectedType === 'strength' && '💪 筋トレ'}
           {selectedType === 'cardio' && '🏃 有酸素'}

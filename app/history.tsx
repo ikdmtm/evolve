@@ -13,7 +13,8 @@ import { WorkoutRepository } from '../src/core/storage/WorkoutRepository';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
 import { SettingsRepository } from '../src/core/storage/SettingsRepository';
 import { formatDateJP, getTodayDate } from '../src/utils/date';
-import { colors, getLevelColor, shadows, radius, spacing } from '../src/theme/colors';
+import { getLevelColor, shadows, radius, spacing } from '../src/theme/colors';
+import { useTheme } from '../src/context/ThemeContext';
 import type { Workout } from '../src/core/domain/models';
 
 interface DayInfo {
@@ -25,6 +26,7 @@ interface DayInfo {
 }
 
 export default function HistoryScreen() {
+  const { colors } = useTheme();
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
@@ -165,50 +167,51 @@ export default function HistoryScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>読み込み中...</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>読み込み中...</Text>
       </View>
     );
   }
 
   const today = new Date();
   const todayStr = getTodayDate();
-  const isCurrentMonth = currentMonth.year === today.getFullYear() && currentMonth.month === today.getMonth() + 1;
+  const isCurrentMonthView = currentMonth.year === today.getFullYear() && currentMonth.month === today.getMonth() + 1;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* ヘッダー */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.navButton} onPress={() => navigateMonth(-1)} activeOpacity={0.7}>
-          <Text style={styles.navButtonText}>◀</Text>
+      <View style={[styles.header, { backgroundColor: colors.backgroundLight }]}>
+        <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.backgroundCard }]} onPress={() => navigateMonth(-1)} activeOpacity={0.7}>
+          <Text style={[styles.navButtonText, { color: colors.primary }]}>◀</Text>
         </TouchableOpacity>
         
         <View style={styles.monthContainer}>
-          <Text style={styles.monthText}>
+          <Text style={[styles.monthText, { color: colors.textPrimary }]}>
             {currentMonth.year}年{currentMonth.month}月
           </Text>
-          {!isCurrentMonth && (
-            <TouchableOpacity onPress={goToToday} style={styles.todayButton}>
-              <Text style={styles.todayButtonText}>今月に戻る</Text>
+          {!isCurrentMonthView && (
+            <TouchableOpacity onPress={goToToday} style={[styles.todayButton, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.todayButtonText, { color: colors.textPrimary }]}>今月に戻る</Text>
             </TouchableOpacity>
           )}
         </View>
         
-        <TouchableOpacity style={styles.navButton} onPress={() => navigateMonth(1)} activeOpacity={0.7}>
-          <Text style={styles.navButtonText}>▶</Text>
+        <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.backgroundCard }]} onPress={() => navigateMonth(1)} activeOpacity={0.7}>
+          <Text style={[styles.navButtonText, { color: colors.primary }]}>▶</Text>
         </TouchableOpacity>
       </View>
 
       {/* カレンダー */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* 曜日ヘッダー */}
-        <View style={styles.weekHeader}>
+        <View style={[styles.weekHeader, { backgroundColor: colors.backgroundCard }]}>
           {['日', '月', '火', '水', '木', '金', '土'].map((day, i) => (
             <View key={i} style={styles.weekHeaderCell}>
               <Text style={[
                 styles.weekHeaderText,
-                i === 0 && styles.sundayText,
-                i === 6 && styles.saturdayText,
+                { color: colors.textSecondary },
+                i === 0 && { color: colors.danger },
+                i === 6 && { color: colors.info },
               ]}>
                 {day}
               </Text>
@@ -217,7 +220,7 @@ export default function HistoryScreen() {
         </View>
 
         {/* 日付グリッド */}
-        <View style={styles.calendarGrid}>
+        <View style={[styles.calendarGrid, { backgroundColor: colors.backgroundCard }]}>
           {dayInfos.map((day, index) => {
             const dateObj = new Date(day.date);
             const dayNum = dateObj.getDate();
@@ -230,8 +233,9 @@ export default function HistoryScreen() {
                 key={day.date}
                 style={[
                   styles.dayCell,
-                  isToday && styles.todayCell,
-                  !day.isCurrentMonth && styles.otherMonthCell,
+                  { borderColor: colors.borderLight },
+                  isToday && { backgroundColor: colors.primary + '20', borderColor: colors.primary, borderWidth: 2 },
+                  !day.isCurrentMonth && { backgroundColor: colors.backgroundLight },
                 ]}
                 onPress={() => day.isCurrentMonth && handleDayPress(day.date)}
                 disabled={!day.isCurrentMonth}
@@ -239,17 +243,18 @@ export default function HistoryScreen() {
               >
                 <Text style={[
                   styles.dayNumber,
-                  !day.isCurrentMonth && styles.otherMonthText,
-                  isSunday && day.isCurrentMonth && styles.sundayText,
-                  isSaturday && day.isCurrentMonth && styles.saturdayText,
-                  isToday && styles.todayDayNumber,
+                  { color: colors.textPrimary },
+                  !day.isCurrentMonth && { color: colors.textMuted },
+                  isSunday && day.isCurrentMonth && { color: colors.danger },
+                  isSaturday && day.isCurrentMonth && { color: colors.info },
+                  isToday && { color: colors.primary, fontWeight: '800' },
                 ]}>
                   {dayNum}
                 </Text>
                 {day.isCurrentMonth && (
                   <View style={styles.dayContent}>
                     <View style={[styles.statusDot, { backgroundColor: getDayStatusColor(day) }]} />
-                    <Text style={[styles.levelText, { color: getLevelColor(day.level) }]}>
+                    <Text style={[styles.levelText, { color: getLevelColor(day.level, colors) }]}>
                       {day.level}
                     </Text>
                   </View>
@@ -260,18 +265,18 @@ export default function HistoryScreen() {
         </View>
 
         {/* 凡例 */}
-        <View style={styles.legend}>
+        <View style={[styles.legend, { backgroundColor: colors.backgroundCard }]}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
-            <Text style={styles.legendText}>活動</Text>
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>活動</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.info }]} />
-            <Text style={styles.legendText}>休息</Text>
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>休息</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.warning }]} />
-            <Text style={styles.legendText}>未活動</Text>
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>未活動</Text>
           </View>
         </View>
       </ScrollView>
@@ -283,55 +288,55 @@ export default function HistoryScreen() {
         transparent={true}
         onRequestClose={closeModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.backgroundLight }]}>
+            <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
                 {selectedDate && formatDateJP(selectedDate)}
               </Text>
-              <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                <Text style={styles.closeButtonText}>✕</Text>
+              <TouchableOpacity onPress={closeModal} style={[styles.closeButton, { backgroundColor: colors.backgroundCard }]}>
+                <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               {selectedWorkouts.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>記録がありません</Text>
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>記録がありません</Text>
                 </View>
               ) : (
                 selectedWorkouts.map((workout) => (
-                  <View key={workout.id} style={styles.workoutCard}>
+                  <View key={workout.id} style={[styles.workoutCard, { backgroundColor: colors.backgroundCard }]}>
                     <View style={styles.workoutHeader}>
                       <View style={[styles.typeBadge, { backgroundColor: getWorkoutTypeColor(workout.type) }]}>
-                        <Text style={styles.typeBadgeText}>{getWorkoutTypeLabel(workout)}</Text>
+                        <Text style={[styles.typeBadgeText, { color: colors.textPrimary }]}>{getWorkoutTypeLabel(workout)}</Text>
                       </View>
-                      <Text style={styles.workoutTitle}>{workout.title}</Text>
+                      <Text style={[styles.workoutTitle, { color: colors.textPrimary }]}>{workout.title}</Text>
                     </View>
 
                     {workout.type === 'strength' && workout.strength && (
-                      <View style={styles.workoutDetails}>
+                      <View style={[styles.workoutDetails, { borderTopColor: colors.border }]}>
                         {workout.strength.exercises.map((exercise, i) => (
                           <View key={i} style={styles.exerciseRow}>
-                            <Text style={styles.exerciseName}>{exercise.name}</Text>
-                            <Text style={styles.exerciseSets}>{exercise.sets.length}セット</Text>
+                            <Text style={[styles.exerciseName, { color: colors.textPrimary }]}>{exercise.name}</Text>
+                            <Text style={[styles.exerciseSets, { color: colors.textSecondary }]}>{exercise.sets.length}セット</Text>
                           </View>
                         ))}
                       </View>
                     )}
 
                     {workout.type === 'cardio' && workout.cardio && (
-                      <View style={styles.workoutDetails}>
-                        <Text style={styles.detailText}>
+                      <View style={[styles.workoutDetails, { borderTopColor: colors.border }]}>
+                        <Text style={[styles.detailText, { color: colors.textSecondary }]}>
                           {workout.cardio.minutes}分 • {workout.cardio.intensity}
                         </Text>
                       </View>
                     )}
 
                     {workout.type === 'light' && workout.light && (
-                      <View style={styles.workoutDetails}>
-                        <Text style={styles.detailText}>
+                      <View style={[styles.workoutDetails, { borderTopColor: colors.border }]}>
+                        <Text style={[styles.detailText, { color: colors.textSecondary }]}>
                           {workout.light.label}
                           {workout.light.minutes && ` • ${workout.light.minutes}分`}
                         </Text>
@@ -339,7 +344,7 @@ export default function HistoryScreen() {
                     )}
 
                     {workout.note && (
-                      <Text style={styles.workoutNote}>{workout.note}</Text>
+                      <Text style={[styles.workoutNote, { color: colors.textMuted }]}>{workout.note}</Text>
                     )}
                   </View>
                 ))
@@ -355,11 +360,9 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   loadingText: {
     fontSize: 16,
-    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 100,
   },
@@ -372,19 +375,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: 60,
     paddingBottom: spacing.md,
-    backgroundColor: colors.backgroundLight,
   },
   navButton: {
     width: 40,
     height: 40,
     borderRadius: radius.full,
-    backgroundColor: colors.backgroundCard,
     justifyContent: 'center',
     alignItems: 'center',
   },
   navButtonText: {
     fontSize: 14,
-    color: colors.primary,
     fontWeight: '600',
   },
   monthContainer: {
@@ -393,18 +393,15 @@ const styles = StyleSheet.create({
   monthText: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.textPrimary,
   },
   todayButton: {
     marginTop: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    backgroundColor: colors.primary,
     borderRadius: radius.full,
   },
   todayButtonText: {
     fontSize: 11,
-    color: colors.textPrimary,
     fontWeight: '600',
   },
   
@@ -419,7 +416,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: spacing.sm,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.backgroundCard,
     borderRadius: radius.md,
   },
   weekHeaderCell: {
@@ -429,18 +425,10 @@ const styles = StyleSheet.create({
   weekHeaderText: {
     fontSize: 12,
     fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  sundayText: {
-    color: colors.danger,
-  },
-  saturdayText: {
-    color: colors.info,
   },
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    backgroundColor: colors.backgroundCard,
     borderRadius: radius.lg,
     overflow: 'hidden',
   },
@@ -451,27 +439,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 0.5,
-    borderColor: colors.borderLight,
-  },
-  todayCell: {
-    backgroundColor: colors.primary + '20',
-    borderColor: colors.primary,
-    borderWidth: 2,
-  },
-  otherMonthCell: {
-    backgroundColor: colors.backgroundLight,
   },
   dayNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  todayDayNumber: {
-    color: colors.primary,
-    fontWeight: '800',
-  },
-  otherMonthText: {
-    color: colors.textMuted,
   },
   dayContent: {
     flexDirection: 'row',
@@ -496,7 +467,6 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
     marginTop: spacing.lg,
     padding: spacing.md,
-    backgroundColor: colors.backgroundCard,
     borderRadius: radius.lg,
   },
   legendItem: {
@@ -511,18 +481,15 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: colors.textSecondary,
     fontWeight: '600',
   },
   
   // モーダル
   modalOverlay: {
     flex: 1,
-    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.backgroundLight,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     maxHeight: '80%',
@@ -531,7 +498,6 @@ const styles = StyleSheet.create({
   modalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: colors.border,
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: spacing.sm,
@@ -544,24 +510,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.textPrimary,
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: radius.full,
-    backgroundColor: colors.backgroundCard,
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeButtonText: {
     fontSize: 16,
-    color: colors.textSecondary,
   },
   modalScroll: {
     padding: spacing.lg,
@@ -572,10 +534,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: colors.textMuted,
   },
   workoutCard: {
-    backgroundColor: colors.backgroundCard,
     borderRadius: radius.lg,
     padding: spacing.md,
     marginBottom: spacing.md,
@@ -593,19 +553,16 @@ const styles = StyleSheet.create({
   },
   typeBadgeText: {
     fontSize: 10,
-    color: colors.textPrimary,
     fontWeight: '700',
   },
   workoutTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.textPrimary,
   },
   workoutDetails: {
     marginTop: spacing.xs,
     paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
   exerciseRow: {
     flexDirection: 'row',
@@ -614,19 +571,15 @@ const styles = StyleSheet.create({
   },
   exerciseName: {
     fontSize: 14,
-    color: colors.textPrimary,
   },
   exerciseSets: {
     fontSize: 14,
-    color: colors.textSecondary,
   },
   detailText: {
     fontSize: 14,
-    color: colors.textSecondary,
   },
   workoutNote: {
     fontSize: 12,
-    color: colors.textMuted,
     marginTop: spacing.sm,
     fontStyle: 'italic',
   },

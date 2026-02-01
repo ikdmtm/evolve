@@ -231,15 +231,15 @@ export default function SettingsScreen() {
             {/* 制限情報 */}
             <View style={styles.restrictionInfo}>
               {!canSetRestDay && !isTodayRestDay ? (
-                <View style={styles.restrictionBadge}>
-                  <Text style={styles.restrictionText}>{restrictionReason}</Text>
+                <View style={[styles.restrictionBadge, { backgroundColor: colors.danger + '20', borderLeftColor: colors.danger }]}>
+                  <Text style={[styles.restrictionText, { color: colors.danger }]}>{restrictionReason}</Text>
                 </View>
               ) : (
-                <View style={styles.usageInfo}>
-                  <Text style={styles.usageText}>
+                <View style={[styles.usageInfo, { backgroundColor: colors.backgroundLight, borderLeftColor: colors.primary }]}>
+                  <Text style={[styles.usageText, { color: colors.textPrimary }]}>
                     使用状況: {manualRestDaysCount}/{Math.min(MAX_MANUAL_REST_DAYS_PER_WEEK, MAX_TOTAL_REST_DAYS - fixedRestDays.length)}回/週
                   </Text>
-                  <Text style={styles.usageSubtext}>
+                  <Text style={[styles.usageSubtext, { color: colors.textMuted }]}>
                     • 連続使用: 不可{'\n'}
                     • 手動休息日: 最大{MAX_MANUAL_REST_DAYS_PER_WEEK}日/週{'\n'}
                     • 固定休息日: {fixedRestDays.length}日{'\n'}
@@ -266,7 +266,8 @@ export default function SettingsScreen() {
                   key={day.id}
                   style={[
                     styles.weekdayButton,
-                    fixedRestDays.includes(day.id) && styles.weekdayButtonActive,
+                    { backgroundColor: colors.backgroundLight, borderColor: colors.border },
+                    fixedRestDays.includes(day.id) && { backgroundColor: colors.primary + '30', borderColor: colors.primary },
                   ]}
                   onPress={() => toggleFixedRestDay(day.id)}
                   activeOpacity={0.7}
@@ -274,7 +275,8 @@ export default function SettingsScreen() {
                   <Text
                     style={[
                       styles.weekdayButtonText,
-                      fixedRestDays.includes(day.id) && styles.weekdayButtonTextActive,
+                      { color: colors.textSecondary },
+                      fixedRestDays.includes(day.id) && { color: colors.primary },
                     ]}
                   >
                     {day.short}
@@ -283,13 +285,13 @@ export default function SettingsScreen() {
               ))}
             </View>
             <View style={styles.fixedRestInfo}>
-              <Text style={styles.fixedRestText}>
+              <Text style={[styles.fixedRestText, { color: colors.textSecondary }]}>
                 選択中: {fixedRestDays.length}/{MAX_TOTAL_REST_DAYS}日 • 残り活動日: {7 - fixedRestDays.length}日/週
               </Text>
             </View>
             {fixedRestDays.length > 0 && (
-              <View style={styles.activeBadge}>
-                <Text style={styles.activeText}>✓ 設定保存済み</Text>
+              <View style={[styles.activeBadge, { backgroundColor: colors.success + '20' }]}>
+                <Text style={[styles.activeText, { color: colors.success }]}>✓ 設定保存済み</Text>
               </View>
             )}
           </View>
@@ -436,33 +438,26 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   restrictionBadge: {
-    backgroundColor: colors.danger + '20',
     padding: spacing.sm,
     borderRadius: radius.sm,
     borderLeftWidth: 3,
-    borderLeftColor: colors.danger,
   },
   restrictionText: {
     fontSize: 13,
-    color: colors.danger,
     fontWeight: '600',
   },
   usageInfo: {
-    backgroundColor: colors.backgroundLight,
     padding: spacing.sm,
     borderRadius: radius.sm,
     borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
   },
   usageText: {
     fontSize: 13,
-    color: colors.textPrimary,
     fontWeight: '600',
     marginBottom: spacing.xs,
   },
   usageSubtext: {
     fontSize: 11,
-    color: colors.textMuted,
     lineHeight: 16,
   },
   
@@ -473,48 +468,20 @@ const styles = StyleSheet.create({
   },
   fixedRestText: {
     fontSize: 12,
-    color: colors.textSecondary,
     fontWeight: '600',
   },
   
-  comingSoonBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    backgroundColor: colors.backgroundLight,
-    borderRadius: radius.xs,
-    marginTop: spacing.sm,
-  },
-  comingSoonText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   activeBadge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
-    backgroundColor: colors.success + '20',
     borderRadius: radius.xs,
     marginTop: spacing.sm,
   },
   activeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: colors.success,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  currentValue: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    backgroundColor: colors.primary + '30',
-    borderRadius: radius.xs,
-  },
-  currentValueText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
   },
   chevron: {
     fontSize: 12,
@@ -535,23 +502,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.full,
-    backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: colors.border,
-  },
-  weekdayButtonActive: {
-    backgroundColor: colors.primary + '30',
-    borderColor: colors.primary,
   },
   weekdayButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  weekdayButtonTextActive: {
-    color: colors.primary,
   },
   
   // フッター
