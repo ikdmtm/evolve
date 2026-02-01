@@ -1,8 +1,9 @@
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { initDatabase } from '../src/core/storage/db';
+import { colors } from '../src/theme/colors';
 
 export default function RootLayout() {
   const [isDbReady, setIsDbReady] = useState(false);
@@ -24,8 +25,8 @@ export default function RootLayout() {
 
   if (error) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <Text style={{ color: 'red', fontSize: 16, textAlign: 'center' }}>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>
           データベース初期化エラー:{'\n'}{error}
         </Text>
       </View>
@@ -34,21 +35,39 @@ export default function RootLayout() {
 
   if (!isDbReady) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-        <Text style={{ marginTop: 10 }}>データベース初期化中...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>読み込み中...</Text>
       </View>
     );
   }
 
   return (
     <>
-      <StatusBar style="dark" />
-      <Tabs>
+      <StatusBar style="light" />
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: colors.backgroundLight,
+            borderTopColor: colors.border,
+            borderTopWidth: 1,
+            height: 85,
+            paddingTop: 8,
+            paddingBottom: 28,
+          },
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textMuted,
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+          },
+        }}
+      >
         <Tabs.Screen
           name="index"
           options={{
-            href: null, // indexは非表示
+            href: null,
           }}
         />
         <Tabs.Screen
@@ -56,6 +75,9 @@ export default function RootLayout() {
           options={{
             title: 'ホーム',
             tabBarLabel: 'ホーム',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 22, color }}>🏠</Text>
+            ),
           }}
         />
         <Tabs.Screen
@@ -63,6 +85,9 @@ export default function RootLayout() {
           options={{
             title: '記録',
             tabBarLabel: '記録',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 22, color }}>✏️</Text>
+            ),
           }}
         />
         <Tabs.Screen
@@ -70,6 +95,9 @@ export default function RootLayout() {
           options={{
             title: '履歴',
             tabBarLabel: '履歴',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 22, color }}>📅</Text>
+            ),
           }}
         />
         <Tabs.Screen
@@ -77,9 +105,38 @@ export default function RootLayout() {
           options={{
             title: '設定',
             tabBarLabel: '設定',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 22, color }}>⚙️</Text>
+            ),
           }}
         />
       </Tabs>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: colors.background,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  loadingText: {
+    marginTop: 16,
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
+});
