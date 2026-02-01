@@ -622,49 +622,85 @@ export default function LogScreen() {
           {workouts.length === 0 ? (
             <Text style={styles.emptyText}>まだ記録がありません</Text>
           ) : (
-            workouts.map((workout) => (
-              <TouchableOpacity
-                key={workout.id}
-                style={styles.workoutItem}
-                onPress={() => viewDetail(workout)}
-              >
-                <View style={styles.workoutHeader}>
-                  <Text style={styles.workoutType}>
-                    {workout.type === 'strength' && '💪 筋トレ'}
-                    {workout.type === 'cardio' && '🏃 有酸素'}
-                    {workout.type === 'light' && '🧘 軽め'}
-                  </Text>
-                  <TouchableOpacity 
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      deleteWorkout(workout.id);
-                    }}
-                  >
-                    <Text style={styles.deleteButton}>削除</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.workoutTitle}>
-                  {workout.title || '(タイトルなし)'}
-                </Text>
-                {workout.cardio && (
-                  <Text style={styles.workoutDetail}>
-                    {workout.cardio.minutes}分 ({workout.cardio.intensity})
-                  </Text>
-                )}
-                {workout.light && (
-                  <Text style={styles.workoutDetail}>
-                    {workout.light.label}
-                    {workout.light.minutes && ` - ${workout.light.minutes}分`}
-                  </Text>
-                )}
-                {workout.strength && workout.strength.exercises.length > 0 && (
-                  <Text style={styles.workoutDetail}>
-                    {workout.strength.exercises.length}種目 -{' '}
-                    {workout.strength.exercises.map(e => e.name).join(', ')}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ))
+            workouts.map((workout) => {
+              const typeColor = 
+                workout.type === 'strength' ? '#5B8FF9' :
+                workout.type === 'cardio' ? '#61DDAA' : '#F6BD16';
+              
+              return (
+                <TouchableOpacity
+                  key={workout.id}
+                  style={[styles.workoutItemCard, { borderLeftColor: typeColor }]}
+                  onPress={() => viewDetail(workout)}
+                >
+                  <View style={styles.workoutCardHeader}>
+                    <View style={styles.workoutCardTypeContainer}>
+                      <View style={[styles.workoutCardTypeBadge, { backgroundColor: typeColor }]}>
+                        <Text style={styles.workoutCardTypeIcon}>
+                          {workout.type === 'strength' && '💪'}
+                          {workout.type === 'cardio' && '🏃'}
+                          {workout.type === 'light' && '🧘'}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={styles.workoutCardTitle}>
+                          {workout.title || '(タイトルなし)'}
+                        </Text>
+                        <Text style={styles.workoutCardType}>
+                          {workout.type === 'strength' && '筋トレ'}
+                          {workout.type === 'cardio' && '有酸素'}
+                          {workout.type === 'light' && '軽め'}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.workoutCardDeleteButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        deleteWorkout(workout.id);
+                      }}
+                    >
+                      <Text style={styles.workoutCardDeleteText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <View style={styles.workoutCardContent}>
+                    {workout.cardio && (
+                      <View style={styles.workoutCardInfo}>
+                        <Text style={styles.workoutCardInfoLabel}>⏱️ 時間</Text>
+                        <Text style={styles.workoutCardInfoValue}>{workout.cardio.minutes}分</Text>
+                        <Text style={styles.workoutCardInfoLabel}>💪 強度</Text>
+                        <Text style={styles.workoutCardInfoValue}>
+                          {workout.cardio.intensity === 'easy' ? '低' : 
+                           workout.cardio.intensity === 'medium' ? '中' : '高'}
+                        </Text>
+                      </View>
+                    )}
+                    {workout.light && (
+                      <View style={styles.workoutCardInfo}>
+                        {workout.light.minutes && (
+                          <>
+                            <Text style={styles.workoutCardInfoLabel}>⏱️ 時間</Text>
+                            <Text style={styles.workoutCardInfoValue}>{workout.light.minutes}分</Text>
+                          </>
+                        )}
+                      </View>
+                    )}
+                    {workout.strength && workout.strength.exercises.length > 0 && (
+                      <View style={styles.workoutCardInfo}>
+                        <Text style={styles.workoutCardInfoLabel}>📋 種目数</Text>
+                        <Text style={styles.workoutCardInfoValue}>{workout.strength.exercises.length}種目</Text>
+                        <Text style={styles.workoutCardInfoLabel}>🏋️ 内容</Text>
+                        <Text style={styles.workoutCardInfoValue} numberOfLines={1}>
+                          {workout.strength.exercises.slice(0, 2).map(e => e.name).join(', ')}
+                          {workout.strength.exercises.length > 2 && ' ...'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })
           )}
         </View>
       </ScrollView>
@@ -673,6 +709,10 @@ export default function LogScreen() {
 
   // 詳細表示画面
   if (mode === 'detail' && editingWorkout) {
+    const typeColor = 
+      editingWorkout.type === 'strength' ? '#5B8FF9' :
+      editingWorkout.type === 'cardio' ? '#61DDAA' : '#F6BD16';
+    
     return (
       <ScrollView style={styles.container}>
         <View style={styles.header}>
@@ -683,12 +723,25 @@ export default function LogScreen() {
         </View>
 
         <View style={styles.detailContainer}>
-          <View style={styles.detailHeader}>
-            <Text style={styles.detailType}>
-              {editingWorkout.type === 'strength' && '💪 筋トレ'}
-              {editingWorkout.type === 'cardio' && '🏃 有酸素'}
-              {editingWorkout.type === 'light' && '🧘 軽め'}
-            </Text>
+          <View style={[styles.detailHeaderCard, { borderTopColor: typeColor }]}>
+            <View style={styles.detailHeaderTop}>
+              <View style={[styles.detailTypeBadge, { backgroundColor: typeColor }]}>
+                <Text style={styles.detailTypeIcon}>
+                  {editingWorkout.type === 'strength' && '💪'}
+                  {editingWorkout.type === 'cardio' && '🏃'}
+                  {editingWorkout.type === 'light' && '🧘'}
+                </Text>
+              </View>
+              <View style={styles.detailHeaderInfo}>
+                <Text style={styles.detailTitle}>{editingWorkout.title}</Text>
+                <Text style={styles.detailType}>
+                  {editingWorkout.type === 'strength' && '筋トレ'}
+                  {editingWorkout.type === 'cardio' && '有酸素運動'}
+                  {editingWorkout.type === 'light' && '軽めの活動'}
+                </Text>
+                <Text style={styles.detailDate}>{formatDateJP(editingWorkout.date)}</Text>
+              </View>
+            </View>
             <View style={styles.detailActions}>
               <TouchableOpacity
                 style={styles.editButton2}
@@ -696,19 +749,16 @@ export default function LogScreen() {
                   startEdit(editingWorkout);
                 }}
               >
-                <Text style={styles.editButtonText}>編集</Text>
+                <Text style={styles.editButtonText}>✏️ 編集</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.deleteButton2}
                 onPress={() => deleteWorkout(editingWorkout.id)}
               >
-                <Text style={styles.deleteButtonText}>削除</Text>
+                <Text style={styles.deleteButtonText}>🗑️ 削除</Text>
               </TouchableOpacity>
             </View>
           </View>
-
-          <Text style={styles.detailTitle}>{editingWorkout.title}</Text>
-          <Text style={styles.detailDate}>{formatDateJP(editingWorkout.date)}</Text>
 
           {editingWorkout.cardio && (
             <View style={styles.detailSection}>
@@ -1283,6 +1333,83 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
   },
+  workoutItemCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  workoutCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  workoutCardTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  workoutCardTypeBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  workoutCardTypeIcon: {
+    fontSize: 24,
+  },
+  workoutCardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  workoutCardType: {
+    fontSize: 12,
+    color: '#999',
+  },
+  workoutCardDeleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  workoutCardDeleteText: {
+    fontSize: 18,
+    color: '#999',
+  },
+  workoutCardContent: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 12,
+  },
+  workoutCardInfo: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  workoutCardInfoLabel: {
+    fontSize: 12,
+    color: '#999',
+    marginRight: 4,
+  },
+  workoutCardInfoValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 12,
+  },
   workoutHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1600,15 +1727,51 @@ const styles = StyleSheet.create({
   detailContainer: {
     padding: 16,
   },
-  detailHeader: {
+  detailHeaderCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    borderTopWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  detailHeaderTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 16,
     marginBottom: 16,
   },
+  detailTypeBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailTypeIcon: {
+    fontSize: 28,
+  },
+  detailHeaderInfo: {
+    flex: 1,
+  },
+  detailTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 4,
+  },
   detailType: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: '#999',
+    marginBottom: 2,
+  },
+  detailDate: {
+    fontSize: 12,
+    color: '#999',
   },
   detailActions: {
     flexDirection: 'row',
@@ -1617,8 +1780,8 @@ const styles = StyleSheet.create({
   editButton2: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
   editButtonText: {
     color: '#fff',
@@ -1628,24 +1791,13 @@ const styles = StyleSheet.create({
   deleteButton2: {
     backgroundColor: '#ff3b30',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
   deleteButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
-  },
-  detailTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  detailDate: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 24,
   },
   detailSection: {
     marginBottom: 24,
