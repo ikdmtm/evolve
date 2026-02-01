@@ -99,10 +99,16 @@ export class SettingsRepository {
    * テーマを保存
    */
   async setTheme(theme: Theme): Promise<void> {
-    await this.db.runAsync(
-      'UPDATE settings SET theme = ? WHERE id = 1',
-      [theme]
-    );
+    try {
+      await this.db.runAsync(
+        'UPDATE settings SET theme = ? WHERE id = 1',
+        [theme]
+      );
+    } catch (error) {
+      // themeカラムが存在しない場合など、エラーをキャッチ
+      // マイグレーション完了後に再度試行される
+      console.warn('Failed to set theme (column may not exist yet):', error);
+    }
   }
 
   /**
