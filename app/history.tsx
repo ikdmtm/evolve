@@ -285,7 +285,6 @@ export default function HistoryScreen() {
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               {selectedWorkouts.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyIcon}>📝</Text>
                   <Text style={styles.emptyText}>記録がありません</Text>
                 </View>
               ) : (
@@ -312,7 +311,7 @@ export default function HistoryScreen() {
                     {workout.type === 'cardio' && workout.cardio && (
                       <View style={styles.workoutDetails}>
                         <Text style={styles.detailText}>
-                          ⏱ {workout.cardio.minutes}分 • {workout.cardio.intensity}
+                          {workout.cardio.minutes}分 • {workout.cardio.intensity}
                         </Text>
                       </View>
                     )}
@@ -327,7 +326,7 @@ export default function HistoryScreen() {
                     )}
 
                     {workout.note && (
-                      <Text style={styles.workoutNote}>💬 {workout.note}</Text>
+                      <Text style={styles.workoutNote}>{workout.note}</Text>
                     )}
                   </View>
                 ))
@@ -557,10 +556,6 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: spacing.xxl,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: spacing.md,
   },
   emptyText: {
     fontSize: 16,

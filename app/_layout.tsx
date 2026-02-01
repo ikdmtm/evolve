@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { initDatabase } from '../src/core/storage/db';
 import { colors } from '../src/theme/colors';
 
@@ -75,8 +76,8 @@ export default function RootLayout() {
           options={{
             title: 'ホーム',
             tabBarLabel: 'ホーム',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 22, color }}>🏠</Text>
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
             ),
           }}
         />
@@ -85,8 +86,8 @@ export default function RootLayout() {
           options={{
             title: '記録',
             tabBarLabel: '記録',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 22, color }}>✏️</Text>
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'create' : 'create-outline'} size={24} color={color} />
             ),
           }}
         />
@@ -95,8 +96,8 @@ export default function RootLayout() {
           options={{
             title: '履歴',
             tabBarLabel: '履歴',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 22, color }}>📅</Text>
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={24} color={color} />
             ),
           }}
         />
@@ -105,8 +106,8 @@ export default function RootLayout() {
           options={{
             title: '設定',
             tabBarLabel: '設定',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 22, color }}>⚙️</Text>
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'settings' : 'settings-outline'} size={24} color={color} />
             ),
           }}
         />
