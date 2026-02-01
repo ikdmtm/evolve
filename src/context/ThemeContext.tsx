@@ -49,6 +49,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       applyTheme(newTheme);
     } catch (error) {
       console.error('Failed to set theme:', error);
+      // エラーでも画面上は切り替える（次回起動時にデフォルトに戻る）
+      applyTheme(newTheme);
     }
   }
 
