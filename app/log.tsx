@@ -807,10 +807,10 @@ export default function LogScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.workoutList}>
-          <Text style={styles.sectionTitle}>今日の記録 ({workouts.length}件)</Text>
+        <View style={[styles.workoutList, { backgroundColor: themeColors.backgroundCard }]}>
+          <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>今日の記録 ({workouts.length}件)</Text>
           {workouts.length === 0 ? (
-            <Text style={styles.emptyText}>まだ記録がありません</Text>
+            <Text style={[styles.emptyText, { color: themeColors.textMuted }]}>まだ記録がありません</Text>
           ) : (
             workouts.map((workout) => {
               const typeColor = 
@@ -820,7 +820,7 @@ export default function LogScreen() {
               return (
                 <TouchableOpacity
                   key={workout.id}
-                  style={[styles.workoutItemCard, { borderLeftColor: typeColor }]}
+                  style={[styles.workoutItemCard, { borderLeftColor: typeColor, backgroundColor: themeColors.backgroundLight }]}
                   onPress={() => viewDetail(workout)}
                 >
                   <View style={styles.workoutCardHeader}>
@@ -833,10 +833,10 @@ export default function LogScreen() {
                         </Text>
                       </View>
                       <View>
-                        <Text style={styles.workoutCardTitle}>
+                        <Text style={[styles.workoutCardTitle, { color: themeColors.textPrimary }]}>
                           {workout.title || '(タイトルなし)'}
                         </Text>
-                        <Text style={styles.workoutCardType}>
+                        <Text style={[styles.workoutCardType, { color: themeColors.textSecondary }]}>
                           {workout.type === 'strength' && '筋トレ'}
                           {workout.type === 'cardio' && '有酸素'}
                           {workout.type === 'light' && '軽め'}
@@ -844,23 +844,23 @@ export default function LogScreen() {
                       </View>
                     </View>
                     <TouchableOpacity 
-                      style={styles.workoutCardDeleteButton}
+                      style={[styles.workoutCardDeleteButton, { backgroundColor: themeColors.backgroundCard }]}
                       onPress={(e) => {
                         e.stopPropagation();
                         deleteWorkout(workout.id);
                       }}
                     >
-                      <Text style={styles.workoutCardDeleteText}>✕</Text>
+                      <Text style={[styles.workoutCardDeleteText, { color: themeColors.danger }]}>✕</Text>
                     </TouchableOpacity>
                   </View>
                   
                   <View style={styles.workoutCardContent}>
                     {workout.cardio && (
                       <View style={styles.workoutCardInfo}>
-                        <Text style={styles.workoutCardInfoLabel}>時間</Text>
-                        <Text style={styles.workoutCardInfoValue}>{workout.cardio.minutes}分</Text>
-                        <Text style={styles.workoutCardInfoLabel}>強度</Text>
-                        <Text style={styles.workoutCardInfoValue}>
+                        <Text style={[styles.workoutCardInfoLabel, { color: themeColors.textMuted }]}>時間</Text>
+                        <Text style={[styles.workoutCardInfoValue, { color: themeColors.textPrimary }]}>{workout.cardio.minutes}分</Text>
+                        <Text style={[styles.workoutCardInfoLabel, { color: themeColors.textMuted }]}>強度</Text>
+                        <Text style={[styles.workoutCardInfoValue, { color: themeColors.textPrimary }]}>
                           {workout.cardio.intensity === 'easy' ? '低' : 
                            workout.cardio.intensity === 'medium' ? '中' : '高'}
                         </Text>
@@ -870,18 +870,18 @@ export default function LogScreen() {
                       <View style={styles.workoutCardInfo}>
                         {workout.light.minutes && (
                           <>
-                            <Text style={styles.workoutCardInfoLabel}>時間</Text>
-                            <Text style={styles.workoutCardInfoValue}>{workout.light.minutes}分</Text>
+                            <Text style={[styles.workoutCardInfoLabel, { color: themeColors.textMuted }]}>時間</Text>
+                            <Text style={[styles.workoutCardInfoValue, { color: themeColors.textPrimary }]}>{workout.light.minutes}分</Text>
                           </>
                         )}
                       </View>
                     )}
                     {workout.strength && workout.strength.exercises.length > 0 && (
                       <View style={styles.workoutCardInfo}>
-                        <Text style={styles.workoutCardInfoLabel}>種目数</Text>
-                        <Text style={styles.workoutCardInfoValue}>{workout.strength.exercises.length}種目</Text>
-                        <Text style={styles.workoutCardInfoLabel}>内容</Text>
-                        <Text style={styles.workoutCardInfoValue} numberOfLines={1}>
+                        <Text style={[styles.workoutCardInfoLabel, { color: themeColors.textMuted }]}>種目数</Text>
+                        <Text style={[styles.workoutCardInfoValue, { color: themeColors.textPrimary }]}>{workout.strength.exercises.length}種目</Text>
+                        <Text style={[styles.workoutCardInfoLabel, { color: themeColors.textMuted }]}>内容</Text>
+                        <Text style={[styles.workoutCardInfoValue, { color: themeColors.textPrimary }]} numberOfLines={1}>
                           {workout.strength.exercises.slice(0, 2).map(e => e.name).join(', ')}
                           {workout.strength.exercises.length > 2 && ' ...'}
                         </Text>
@@ -1052,85 +1052,88 @@ export default function LogScreen() {
         </Text>
       </View>
 
-      <View style={styles.form}>
-        <Text style={styles.label}>タイトル（任意）</Text>
+      <View style={[styles.form, { backgroundColor: themeColors.backgroundCard }]}>
+        <Text style={[styles.label, { color: themeColors.textSecondary }]}>タイトル（任意）</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: themeColors.backgroundLight, color: themeColors.textPrimary, borderColor: themeColors.border }]}
           value={title}
           onChangeText={setTitle}
           placeholder="例: 朝のランニング"
+          placeholderTextColor={themeColors.textMuted}
         />
 
         {selectedType === 'cardio' && (
           <>
-            <Text style={styles.label}>活動 *</Text>
-            <View style={styles.activitySelectContainer}>
-              <Text style={styles.activitySelectText}>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>活動 *</Text>
+            <View style={[styles.activitySelectContainer, { backgroundColor: themeColors.backgroundLight, borderColor: themeColors.border }]}>
+              <Text style={[styles.activitySelectText, { color: cardioActivity ? themeColors.textPrimary : themeColors.textMuted }]}>
                 {cardioActivity || '活動を選択...'}
               </Text>
               <TouchableOpacity
-                style={styles.activitySelectButton}
+                style={[styles.activitySelectButton, { backgroundColor: themeColors.primary }]}
                 onPress={openActivityModal}
               >
-                <Text style={styles.activitySelectButtonText}>
+                <Text style={[styles.activitySelectButtonText, { color: themeColors.textPrimary }]}>
                   {cardioActivity ? '変更' : '選択'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.label}>時間（分） *</Text>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>時間（分） *</Text>
             <View style={styles.numberInputContainer}>
               <TouchableOpacity
-                style={styles.minusButton}
+                style={[styles.minusButton, { backgroundColor: themeColors.backgroundLight, borderColor: themeColors.border }]}
                 onPress={() => adjustMinutes(-1)}
               >
-                <Text style={styles.buttonText}>−</Text>
+                <Text style={[styles.buttonText, { color: themeColors.textPrimary }]}>−</Text>
               </TouchableOpacity>
               <TextInput
-                style={styles.numberInput}
+                style={[styles.numberInput, { backgroundColor: themeColors.backgroundLight, color: themeColors.textPrimary, borderColor: themeColors.border }]}
                 value={cardioMinutes}
                 onChangeText={setCardioMinutes}
                 keyboardType="numeric"
                 placeholder="0"
+                placeholderTextColor={themeColors.textMuted}
               />
               <TouchableOpacity
-                style={styles.plusButton}
+                style={[styles.plusButton, { backgroundColor: themeColors.backgroundLight, borderColor: themeColors.border }]}
                 onPress={() => adjustMinutes(1)}
               >
-                <Text style={styles.buttonText}>＋</Text>
+                <Text style={[styles.buttonText, { color: themeColors.textPrimary }]}>＋</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickButton}
+                style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(5)}
               >
-                <Text style={styles.quickButtonText}>+5</Text>
+                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+5</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickButton}
+                style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(10)}
               >
-                <Text style={styles.quickButtonText}>+10</Text>
+                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+10</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickButton}
+                style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(15)}
               >
-                <Text style={styles.quickButtonText}>+15</Text>
+                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+15</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.label}>強度</Text>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>強度</Text>
             <View style={styles.intensitySelector}>
               {(['easy', 'medium', 'hard'] as const).map((intensity) => (
                 <TouchableOpacity
                   key={intensity}
                   style={[
                     styles.intensityButton,
-                    cardioIntensity === intensity && styles.intensityButtonActive,
+                    { backgroundColor: themeColors.backgroundLight, borderColor: themeColors.border },
+                    cardioIntensity === intensity && { backgroundColor: themeColors.primary, borderColor: themeColors.primary },
                   ]}
                   onPress={() => setCardioIntensity(intensity)}
                 >
-                  <Text style={styles.intensityButtonText}>
+                  <Text style={[styles.intensityButtonText, { color: cardioIntensity === intensity ? themeColors.textPrimary : themeColors.textSecondary }]}>
                     {intensity === 'easy' && '低'}
                     {intensity === 'medium' && '中'}
                     {intensity === 'hard' && '高'}
@@ -1143,59 +1146,60 @@ export default function LogScreen() {
 
         {selectedType === 'light' && (
           <>
-            <Text style={styles.label}>活動 *</Text>
-            <View style={styles.activitySelectContainer}>
-              <Text style={styles.activitySelectText}>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>活動 *</Text>
+            <View style={[styles.activitySelectContainer, { backgroundColor: themeColors.backgroundLight, borderColor: themeColors.border }]}>
+              <Text style={[styles.activitySelectText, { color: lightActivity ? themeColors.textPrimary : themeColors.textMuted }]}>
                 {lightActivity || '活動を選択...'}
               </Text>
               <TouchableOpacity
-                style={styles.activitySelectButton}
+                style={[styles.activitySelectButton, { backgroundColor: themeColors.primary }]}
                 onPress={openActivityModal}
               >
-                <Text style={styles.activitySelectButtonText}>
+                <Text style={[styles.activitySelectButtonText, { color: themeColors.textPrimary }]}>
                   {lightActivity ? '変更' : '選択'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.label}>時間（分・任意）</Text>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>時間（分・任意）</Text>
             <View style={styles.numberInputContainer}>
               <TouchableOpacity
-                style={styles.minusButton}
+                style={[styles.minusButton, { backgroundColor: themeColors.backgroundLight, borderColor: themeColors.border }]}
                 onPress={() => adjustMinutes(-1)}
               >
-                <Text style={styles.buttonText}>−</Text>
+                <Text style={[styles.buttonText, { color: themeColors.textPrimary }]}>−</Text>
               </TouchableOpacity>
               <TextInput
-                style={styles.numberInput}
+                style={[styles.numberInput, { backgroundColor: themeColors.backgroundLight, color: themeColors.textPrimary, borderColor: themeColors.border }]}
                 value={lightMinutes}
                 onChangeText={setLightMinutes}
                 keyboardType="numeric"
                 placeholder="0"
+                placeholderTextColor={themeColors.textMuted}
               />
               <TouchableOpacity
-                style={styles.plusButton}
+                style={[styles.plusButton, { backgroundColor: themeColors.backgroundLight, borderColor: themeColors.border }]}
                 onPress={() => adjustMinutes(1)}
               >
-                <Text style={styles.buttonText}>＋</Text>
+                <Text style={[styles.buttonText, { color: themeColors.textPrimary }]}>＋</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickButton}
+                style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(5)}
               >
-                <Text style={styles.quickButtonText}>+5</Text>
+                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+5</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickButton}
+                style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(10)}
               >
-                <Text style={styles.quickButtonText}>+10</Text>
+                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+10</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickButton}
+                style={[styles.quickButton, { backgroundColor: themeColors.primary }]}
                 onPress={() => adjustMinutes(15)}
               >
-                <Text style={styles.quickButtonText}>+15</Text>
+                <Text style={[styles.quickButtonText, { color: themeColors.textPrimary }]}>+15</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -1203,21 +1207,21 @@ export default function LogScreen() {
 
         {selectedType === 'strength' && (
           <>
-            <Text style={styles.label}>種目</Text>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>種目</Text>
             {exercises.map((exercise, exerciseIndex) => {
               const previousSets = previousRecords.get(exercise.name);
               
               return (
-                <View key={exerciseIndex} style={styles.exerciseContainer}>
+                <View key={exerciseIndex} style={[styles.exerciseContainer, { backgroundColor: themeColors.backgroundLight, borderColor: themeColors.border }]}>
                   <View style={styles.exerciseHeader}>
-                    <Text style={styles.exerciseName}>
+                    <Text style={[styles.exerciseName, { color: themeColors.textPrimary }]}>
                       {exercise.name || `種目${exerciseIndex + 1}`}
                     </Text>
                     <TouchableOpacity onPress={() => openExerciseModal(exerciseIndex)}>
-                      <Text style={styles.editButton}>変更</Text>
+                      <Text style={[styles.editButton, { color: themeColors.primary }]}>変更</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => removeExercise(exerciseIndex)}>
-                      <Text style={styles.removeButton}>削除</Text>
+                      <Text style={[styles.removeButton, { color: themeColors.danger }]}>削除</Text>
                     </TouchableOpacity>
                   </View>
                   
