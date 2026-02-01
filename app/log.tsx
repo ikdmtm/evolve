@@ -254,6 +254,11 @@ export default function LogScreen() {
       note?: string;
     }>;
   }>>([]);
+  const [previousRecords, setPreviousRecords] = useState<Map<string, Array<{
+    reps?: number;
+    weightKg?: number;
+    rpe?: number;
+  }>>>(new Map());
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null);
   const [customExerciseName, setCustomExerciseName] = useState('');
@@ -494,7 +499,44 @@ export default function LogScreen() {
     }
   }
 
-  function selectExercise(name: string) {
+  // 前回の記録を取得
+  async function loadPreviousRecord(exerciseName: string) {
+    try {
+      // 今日より前の記録を取得（最大30日前まで）
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const startDate = `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`;
+      
+      const pastWorkouts = await repo.getByDateRange(startDate, today);
+      
+      // 今日の記録は除外
+      const filteredWorkouts = pastWorkouts.filter(w => w.date !== today);
+      
+      // 同じ種目の最新の記録を探す
+      for (let i = filteredWorkouts.length - 1; i >= 0; i--) {
+        const workout = filteredWorkouts[i];
+        if (workout.strength && workout.strength.exercises) {
+          const exercise = workout.strength.exercises.find(e => e.name === exerciseName);
+          if (exercise && exercise.sets.length > 0) {
+            // 前回の記録を保存
+            setPreviousRecords(prev => new Map(prev).set(exerciseName, exercise.sets));
+            return;
+          }
+        }
+      }
+      
+      // 記録が見つからない場合は削除
+      setPreviousRecords(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(exerciseName);
+        return newMap;
+      });
+    } catch (error) {
+      console.error('Failed to load previous record:', error);
+    }
+  }
+
+  async function selectExercise(name: string) {
     if (name === 'カスタム入力') {
       // カスタム入力の場合はモーダルを閉じずに入力欄を表示
       setIsCustomMode(true);
@@ -505,25 +547,46 @@ export default function LogScreen() {
     if (editingExerciseIndex !== null) {
       // 既存の種目を編集
       updateExerciseName(editingExerciseIndex, name);
+      setShowExerciseModal(false);
     } else {
-      // 新規種目を追加
-      setExercises([...exercises, { name, sets: [{ reps: 10, weightKg: 0 }] }]);
+      // 新規種目を追加（前回の記録から初期値を取得）
+      await loadPreviousRecord(name);
+      
+      setExercises(currentExercises => {
+        const previousSets = previousRecords.get(name);
+        const initialSet = previousSets && previousSets.length > 0 
+          ? { ...previousSets[0] }
+          : { reps: 10, weightKg: 0 };
+        return [...currentExercises, { name, sets: [initialSet] }];
+      });
+      setShowExerciseModal(false);
     }
-    setShowExerciseModal(false);
   }
 
-  function addCustomExercise() {
+  async function addCustomExercise() {
     if (!customExerciseName.trim()) {
       Alert.alert('エラー', '種目名を入力してください');
       return;
     }
     
+    const name = customExerciseName.trim();
+    
     if (editingExerciseIndex !== null) {
-      updateExerciseName(editingExerciseIndex, customExerciseName.trim());
+      updateExerciseName(editingExerciseIndex, name);
+      setShowExerciseModal(false);
     } else {
-      setExercises([...exercises, { name: customExerciseName.trim(), sets: [{ reps: 10, weightKg: 0 }] }]);
+      // カスタム種目でも前回の記録を探す
+      await loadPreviousRecord(name);
+      
+      setExercises(currentExercises => {
+        const previousSets = previousRecords.get(name);
+        const initialSet = previousSets && previousSets.length > 0 
+          ? { ...previousSets[0] }
+          : { reps: 10, weightKg: 0 };
+        return [...currentExercises, { name, sets: [initialSet] }];
+      });
+      setShowExerciseModal(false);
     }
-    setShowExerciseModal(false);
   }
 
   function removeExercise(index: number) {
@@ -534,11 +597,31 @@ export default function LogScreen() {
     const newExercises = [...exercises];
     newExercises[index].name = name;
     setExercises(newExercises);
+    
+    // 種目名が変更されたら前回の記録を読み込む
+    loadPreviousRecord(name);
   }
 
   function addSet(exerciseIndex: number) {
     const newExercises = [...exercises];
-    newExercises[exerciseIndex].sets.push({});
+    const exercise = newExercises[exerciseIndex];
+    
+    // 前回の記録または直前のセットをコピー
+    const previousSets = previousRecords.get(exercise.name);
+    const lastSet = exercise.sets[exercise.sets.length - 1];
+    const setIndexForPrevious = exercise.sets.length;
+    
+    let initialSet: any = {};
+    
+    if (previousSets && previousSets[setIndexForPrevious]) {
+      // 前回の同じセット番号の記録を使用
+      initialSet = { ...previousSets[setIndexForPrevious] };
+    } else if (lastSet) {
+      // 直前のセットをコピー
+      initialSet = { ...lastSet };
+    }
+    
+    newExercises[exerciseIndex].sets.push(initialSet);
     setExercises(newExercises);
   }
 
@@ -1014,19 +1097,37 @@ export default function LogScreen() {
         {selectedType === 'strength' && (
           <>
             <Text style={styles.label}>種目</Text>
-            {exercises.map((exercise, exerciseIndex) => (
-              <View key={exerciseIndex} style={styles.exerciseContainer}>
-                <View style={styles.exerciseHeader}>
-                  <Text style={styles.exerciseName}>
-                    {exercise.name || `種目${exerciseIndex + 1}`}
-                  </Text>
-                  <TouchableOpacity onPress={() => openExerciseModal(exerciseIndex)}>
-                    <Text style={styles.editButton}>変更</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => removeExercise(exerciseIndex)}>
-                    <Text style={styles.removeButton}>削除</Text>
-                  </TouchableOpacity>
-                </View>
+            {exercises.map((exercise, exerciseIndex) => {
+              const previousSets = previousRecords.get(exercise.name);
+              
+              return (
+                <View key={exerciseIndex} style={styles.exerciseContainer}>
+                  <View style={styles.exerciseHeader}>
+                    <Text style={styles.exerciseName}>
+                      {exercise.name || `種目${exerciseIndex + 1}`}
+                    </Text>
+                    <TouchableOpacity onPress={() => openExerciseModal(exerciseIndex)}>
+                      <Text style={styles.editButton}>変更</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => removeExercise(exerciseIndex)}>
+                      <Text style={styles.removeButton}>削除</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {previousSets && previousSets.length > 0 && (
+                    <View style={styles.previousRecordContainer}>
+                      <Text style={styles.previousRecordLabel}>前回の記録:</Text>
+                      <Text style={styles.previousRecordText}>
+                        {previousSets.map((set, i) => {
+                          const parts = [];
+                          if (set.reps) parts.push(`${set.reps}回`);
+                          if (set.weightKg) parts.push(`${set.weightKg}kg`);
+                          if (set.rpe) parts.push(`RPE${set.rpe}`);
+                          return `${i + 1}. ${parts.join(' × ')}`;
+                        }).join(' / ')}
+                      </Text>
+                    </View>
+                  )}
 
                 {exercise.sets.map((set, setIndex) => (
                   <View key={setIndex} style={styles.setContainer}>
@@ -1138,7 +1239,8 @@ export default function LogScreen() {
                   <Text style={styles.addSetButtonText}>+ セット追加</Text>
                 </TouchableOpacity>
               </View>
-            ))}
+              );
+            })}
 
             <TouchableOpacity style={styles.addExerciseButton} onPress={() => openExerciseModal(null)}>
               <Text style={styles.addExerciseButtonText}>+ 種目追加</Text>
@@ -1524,6 +1626,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 8,
+  },
+  previousRecordContainer: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
+  },
+  previousRecordLabel: {
+    fontSize: 11,
+    color: '#999',
+    marginBottom: 4,
+  },
+  previousRecordText: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
   },
   exerciseNameInput: {
     flex: 1,
