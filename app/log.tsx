@@ -155,6 +155,76 @@ const EXERCISE_PRESETS = [
   },
 ];
 
+// 有酸素運動の種目リスト
+const CARDIO_PRESETS = [
+  {
+    category: '屋内',
+    exercises: [
+      'ランニングマシン',
+      'エアロバイク',
+      'エリプティカル',
+      'ローイングマシン',
+      'ステッパー',
+      'エアロビクス',
+      '縄跳び',
+    ],
+  },
+  {
+    category: '屋外',
+    exercises: [
+      'ランニング',
+      'ジョギング',
+      'ウォーキング',
+      'サイクリング',
+      '水泳',
+      'ハイキング',
+    ],
+  },
+  {
+    category: 'スポーツ',
+    exercises: [
+      'サッカー',
+      'バスケットボール',
+      'テニス',
+      'バドミントン',
+      'ダンス',
+    ],
+  },
+  {
+    category: 'その他',
+    exercises: ['カスタム入力'],
+  },
+];
+
+// 軽めの活動リスト
+const LIGHT_PRESETS = [
+  {
+    category: '日常活動',
+    exercises: [
+      '散歩',
+      '階段',
+      '家事',
+      '掃除',
+      '買い物',
+      '庭仕事',
+    ],
+  },
+  {
+    category: 'ストレッチ・リラクゼーション',
+    exercises: [
+      'ストレッチ',
+      'ヨガ',
+      'ピラティス',
+      '体操',
+      '太極拳',
+    ],
+  },
+  {
+    category: 'その他',
+    exercises: ['カスタム入力'],
+  },
+];
+
 export default function LogScreen() {
   const [mode, setMode] = useState<FormMode>('list');
   const [selectedType, setSelectedType] = useState<WorkoutType>('strength');
@@ -166,11 +236,12 @@ export default function LogScreen() {
   const [note, setNote] = useState('');
   
   // Cardio用
+  const [cardioActivity, setCardioActivity] = useState('');
   const [cardioMinutes, setCardioMinutes] = useState('');
   const [cardioIntensity, setCardioIntensity] = useState<'easy' | 'medium' | 'hard'>('medium');
   
   // Light用
-  const [lightLabel, setLightLabel] = useState('');
+  const [lightActivity, setLightActivity] = useState('');
   const [lightMinutes, setLightMinutes] = useState('');
 
   // Strength用
@@ -188,6 +259,12 @@ export default function LogScreen() {
   const [customExerciseName, setCustomExerciseName] = useState('');
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [exerciseSearchQuery, setExerciseSearchQuery] = useState('');
+  
+  // 活動選択モーダル（Cardio/Light用）
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [activitySearchQuery, setActivitySearchQuery] = useState('');
+  const [customActivityName, setCustomActivityName] = useState('');
+  const [isActivityCustomMode, setIsActivityCustomMode] = useState(false);
 
   const repo = new WorkoutRepository();
   const today = getTodayDate();
@@ -219,9 +296,10 @@ export default function LogScreen() {
   function resetForm() {
     setTitle('');
     setNote('');
+    setCardioActivity('');
     setCardioMinutes('');
     setCardioIntensity('medium');
-    setLightLabel('');
+    setLightActivity('');
     setLightMinutes('');
     setExercises([]);
   }
@@ -241,6 +319,10 @@ export default function LogScreen() {
       };
 
       if (selectedType === 'cardio') {
+        if (!cardioActivity.trim()) {
+          Alert.alert('エラー', '活動を選択してください');
+          return;
+        }
         const minutes = parseInt(cardioMinutes);
         if (isNaN(minutes) || minutes <= 0) {
           Alert.alert('エラー', '時間を入力してください');
@@ -250,11 +332,17 @@ export default function LogScreen() {
           minutes,
           intensity: cardioIntensity,
         };
+        workout.title = finalTitle || cardioActivity;
       } else if (selectedType === 'light') {
+        if (!lightActivity.trim()) {
+          Alert.alert('エラー', '活動を選択してください');
+          return;
+        }
         workout.light = {
-          label: lightLabel || undefined,
+          label: lightActivity,
           minutes: lightMinutes ? parseInt(lightMinutes) : undefined,
         };
+        workout.title = finalTitle || lightActivity;
       } else if (selectedType === 'strength') {
         if (exercises.length === 0) {
           Alert.alert('エラー', '少なくとも1つの種目を追加してください');
@@ -304,10 +392,11 @@ export default function LogScreen() {
     setNote(workout.note || '');
     
     if (workout.type === 'cardio' && workout.cardio) {
+      setCardioActivity(workout.title || '');
       setCardioMinutes(String(workout.cardio.minutes));
       setCardioIntensity(workout.cardio.intensity || 'medium');
     } else if (workout.type === 'light' && workout.light) {
-      setLightLabel(workout.light.label || '');
+      setLightActivity(workout.light.label || '');
       setLightMinutes(workout.light.minutes ? String(workout.light.minutes) : '');
     } else if (workout.type === 'strength' && workout.strength) {
       setExercises(workout.strength.exercises);
@@ -337,6 +426,72 @@ export default function LogScreen() {
         exercise.toLowerCase().includes(query)
       ),
     })).filter(category => category.exercises.length > 0);
+  }
+
+  // 活動選択モーダル（Cardio/Light用）
+  function openActivityModal() {
+    setActivitySearchQuery('');
+    setCustomActivityName('');
+    setIsActivityCustomMode(false);
+    setShowActivityModal(true);
+  }
+
+  function selectActivity(name: string) {
+    if (name === 'カスタム入力') {
+      setIsActivityCustomMode(true);
+      setCustomActivityName('');
+      return;
+    }
+
+    if (selectedType === 'cardio') {
+      setCardioActivity(name);
+    } else if (selectedType === 'light') {
+      setLightActivity(name);
+    }
+    setShowActivityModal(false);
+  }
+
+  function addCustomActivity() {
+    if (!customActivityName.trim()) {
+      Alert.alert('エラー', '活動名を入力してください');
+      return;
+    }
+
+    if (selectedType === 'cardio') {
+      setCardioActivity(customActivityName.trim());
+    } else if (selectedType === 'light') {
+      setLightActivity(customActivityName.trim());
+    }
+    setShowActivityModal(false);
+  }
+
+  function getFilteredActivities() {
+    const presets = selectedType === 'cardio' ? CARDIO_PRESETS : LIGHT_PRESETS;
+    
+    if (!activitySearchQuery.trim()) {
+      return presets;
+    }
+
+    const query = activitySearchQuery.toLowerCase();
+    return presets.map(category => ({
+      category: category.category,
+      exercises: category.exercises.filter(exercise =>
+        exercise.toLowerCase().includes(query)
+      ),
+    })).filter(category => category.exercises.length > 0);
+  }
+
+  // 時間調整（Cardio/Light用）
+  function adjustMinutes(delta: number) {
+    if (selectedType === 'cardio') {
+      const current = parseInt(cardioMinutes) || 0;
+      const newValue = Math.max(0, current + delta);
+      setCardioMinutes(String(newValue));
+    } else if (selectedType === 'light') {
+      const current = parseInt(lightMinutes) || 0;
+      const newValue = Math.max(0, current + delta);
+      setLightMinutes(String(newValue));
+    }
   }
 
   function selectExercise(name: string) {
@@ -640,14 +795,61 @@ export default function LogScreen() {
 
         {selectedType === 'cardio' && (
           <>
+            <Text style={styles.label}>活動 *</Text>
+            <View style={styles.activitySelectContainer}>
+              <Text style={styles.activitySelectText}>
+                {cardioActivity || '活動を選択...'}
+              </Text>
+              <TouchableOpacity
+                style={styles.activitySelectButton}
+                onPress={openActivityModal}
+              >
+                <Text style={styles.activitySelectButtonText}>
+                  {cardioActivity ? '変更' : '選択'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <Text style={styles.label}>時間（分） *</Text>
-            <TextInput
-              style={styles.input}
-              value={cardioMinutes}
-              onChangeText={setCardioMinutes}
-              keyboardType="numeric"
-              placeholder="30"
-            />
+            <View style={styles.numberInputContainer}>
+              <TouchableOpacity
+                style={styles.minusButton}
+                onPress={() => adjustMinutes(-1)}
+              >
+                <Text style={styles.buttonText}>−</Text>
+              </TouchableOpacity>
+              <TextInput
+                style={styles.numberInput}
+                value={cardioMinutes}
+                onChangeText={setCardioMinutes}
+                keyboardType="numeric"
+                placeholder="0"
+              />
+              <TouchableOpacity
+                style={styles.plusButton}
+                onPress={() => adjustMinutes(1)}
+              >
+                <Text style={styles.buttonText}>＋</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickButton}
+                onPress={() => adjustMinutes(5)}
+              >
+                <Text style={styles.quickButtonText}>+5</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickButton}
+                onPress={() => adjustMinutes(10)}
+              >
+                <Text style={styles.quickButtonText}>+10</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickButton}
+                onPress={() => adjustMinutes(15)}
+              >
+                <Text style={styles.quickButtonText}>+15</Text>
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.label}>強度</Text>
             <View style={styles.intensitySelector}>
@@ -673,22 +875,61 @@ export default function LogScreen() {
 
         {selectedType === 'light' && (
           <>
-            <Text style={styles.label}>ラベル（任意）</Text>
-            <TextInput
-              style={styles.input}
-              value={lightLabel}
-              onChangeText={setLightLabel}
-              placeholder="例: 散歩、ストレッチ"
-            />
+            <Text style={styles.label}>活動 *</Text>
+            <View style={styles.activitySelectContainer}>
+              <Text style={styles.activitySelectText}>
+                {lightActivity || '活動を選択...'}
+              </Text>
+              <TouchableOpacity
+                style={styles.activitySelectButton}
+                onPress={openActivityModal}
+              >
+                <Text style={styles.activitySelectButtonText}>
+                  {lightActivity ? '変更' : '選択'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.label}>時間（分・任意）</Text>
-            <TextInput
-              style={styles.input}
-              value={lightMinutes}
-              onChangeText={setLightMinutes}
-              keyboardType="numeric"
-              placeholder="15"
-            />
+            <View style={styles.numberInputContainer}>
+              <TouchableOpacity
+                style={styles.minusButton}
+                onPress={() => adjustMinutes(-1)}
+              >
+                <Text style={styles.buttonText}>−</Text>
+              </TouchableOpacity>
+              <TextInput
+                style={styles.numberInput}
+                value={lightMinutes}
+                onChangeText={setLightMinutes}
+                keyboardType="numeric"
+                placeholder="0"
+              />
+              <TouchableOpacity
+                style={styles.plusButton}
+                onPress={() => adjustMinutes(1)}
+              >
+                <Text style={styles.buttonText}>＋</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickButton}
+                onPress={() => adjustMinutes(5)}
+              >
+                <Text style={styles.quickButtonText}>+5</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickButton}
+                onPress={() => adjustMinutes(10)}
+              >
+                <Text style={styles.quickButtonText}>+10</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickButton}
+                onPress={() => adjustMinutes(15)}
+              >
+                <Text style={styles.quickButtonText}>+15</Text>
+              </TouchableOpacity>
+            </View>
           </>
         )}
 
@@ -900,6 +1141,76 @@ export default function LogScreen() {
                   autoFocus
                 />
                 <TouchableOpacity style={styles.customAddButton} onPress={addCustomExercise}>
+                  <Text style={styles.customAddButtonText}>追加</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+
+    {/* 活動選択モーダル（Cardio/Light用） */}
+    <Modal
+      visible={showActivityModal}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowActivityModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>活動を選択</Text>
+            <TouchableOpacity onPress={() => setShowActivityModal(false)}>
+              <Text style={styles.modalCloseButton}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              value={activitySearchQuery}
+              onChangeText={setActivitySearchQuery}
+              placeholder="活動を検索..."
+              autoCapitalize="none"
+            />
+            {activitySearchQuery.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearSearchButton}
+                onPress={() => setActivitySearchQuery('')}
+              >
+                <Text style={styles.clearSearchText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <ScrollView style={styles.modalScroll}>
+            {getFilteredActivities().map((category) => (
+              <View key={category.category} style={styles.categoryContainer}>
+                <Text style={styles.categoryTitle}>{category.category}</Text>
+                {category.exercises.map((exercise) => (
+                  <TouchableOpacity
+                    key={exercise}
+                    style={styles.exerciseOption}
+                    onPress={() => selectActivity(exercise)}
+                  >
+                    <Text style={styles.exerciseOptionText}>{exercise}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ))}
+
+            {isActivityCustomMode && (
+              <View style={styles.customInputContainer}>
+                <Text style={styles.categoryTitle}>カスタム活動</Text>
+                <TextInput
+                  style={styles.input}
+                  value={customActivityName}
+                  onChangeText={setCustomActivityName}
+                  placeholder="活動名を入力..."
+                  autoFocus
+                />
+                <TouchableOpacity style={styles.customAddButton} onPress={addCustomActivity}>
                   <Text style={styles.customAddButtonText}>追加</Text>
                 </TouchableOpacity>
               </View>
@@ -1381,5 +1692,31 @@ const styles = StyleSheet.create({
   detailSetText: {
     fontSize: 14,
     color: '#666',
+  },
+  activitySelectContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    marginBottom: 16,
+  },
+  activitySelectText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  activitySelectButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  activitySelectButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
