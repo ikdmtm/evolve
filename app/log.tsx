@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { WorkoutRepository } from '../src/core/storage/WorkoutRepository';
+import { DayStateRepository } from '../src/core/storage/DayStateRepository';
 import type { Workout, WorkoutType } from '../src/core/domain/models';
 import { getTodayDate, generateId, formatDateJP } from '../src/utils/date';
 
@@ -362,12 +363,60 @@ export default function LogScreen() {
         await repo.create(workout);
       }
 
+      // レベルを更新
+      await updateDayLevel(today);
+
       Alert.alert('成功', '記録を保存しました');
       setMode('list');
       setEditingWorkout(null);
       loadWorkouts();
     } catch (error) {
       Alert.alert('エラー', error instanceof Error ? error.message : '保存に失敗しました');
+    }
+  }
+
+  async function updateDayLevel(date: string) {
+    try {
+      const dayStateRepo = new DayStateRepository();
+      
+      // その日の記録を取得
+      const workouts = await repo.getByDate(date);
+      const hasActivity = workouts.length > 0;
+      
+      // 前日のレベルを取得
+      const yesterday = new Date(date);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+      const yesterdayState = await dayStateRepo.getByDate(yesterdayStr);
+      const prevLevel = yesterdayState?.level ?? 0;
+      
+      // 今日の休息日設定を取得
+      const todayState = await dayStateRepo.getByDate(date);
+      const isRestDay = todayState?.isRestDay ?? false;
+      
+      // レベルを計算
+      let newLevel = prevLevel;
+      if (isRestDay) {
+        // 休息日はレベル維持
+        newLevel = prevLevel;
+      } else if (hasActivity) {
+        // 活動ありは+1
+        newLevel = Math.min(prevLevel + 1, 10);
+      } else {
+        // 活動なしは-1
+        newLevel = Math.max(prevLevel - 1, 0);
+      }
+      
+      // DayStateを更新
+      await dayStateRepo.upsert({
+        date,
+        isRestDay,
+        level: newLevel,
+      });
+      
+      console.log(`[updateDayLevel] ${date}: ${prevLevel} -> ${newLevel} (hasActivity: ${hasActivity}, isRestDay: ${isRestDay})`);
+    } catch (error) {
+      console.error('Failed to update day level:', error);
     }
   }
 
@@ -380,6 +429,10 @@ export default function LogScreen() {
         onPress: async () => {
           try {
             await repo.delete(id);
+            
+            // レベルを更新
+            await updateDayLevel(today);
+            
             Alert.alert('完了', '削除しました');
             setMode('list');
             setEditingWorkout(null);
