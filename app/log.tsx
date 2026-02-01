@@ -15,14 +15,144 @@ import { getTodayDate, generateId, formatDateJP } from '../src/utils/date';
 
 type FormMode = 'list' | 'create' | 'edit';
 
-// 主要な筋トレ種目リスト
+// 筋トレ種目リスト（フリーウエイト・マシン網羅）
 const EXERCISE_PRESETS = [
-  { category: '胸', exercises: ['ベンチプレス', 'ダンベルプレス', '腕立て伏せ', 'ディップス'] },
-  { category: '背中', exercises: ['デッドリフト', 'ラットプルダウン', '懸垂', 'ベントオーバーロウ'] },
-  { category: '脚', exercises: ['スクワット', 'レッグプレス', 'レッグカール', 'レッグエクステンション'] },
-  { category: '肩', exercises: ['ショルダープレス', 'サイドレイズ', 'フロントレイズ', 'リアレイズ'] },
-  { category: '腕', exercises: ['バーベルカール', 'ハンマーカール', 'トライセップスエクステンション', 'ディップス'] },
-  { category: 'その他', exercises: ['腹筋', 'プランク', 'カスタム入力'] },
+  {
+    category: '胸（フリーウエイト）',
+    exercises: [
+      'バーベルベンチプレス',
+      'ダンベルベンチプレス',
+      'インクラインベンチプレス',
+      'デクラインベンチプレス',
+      'ダンベルフライ',
+      'インクラインダンベルフライ',
+      'ダンベルプルオーバー',
+      '腕立て伏せ',
+      'ディップス',
+    ],
+  },
+  {
+    category: '胸（マシン）',
+    exercises: [
+      'チェストプレスマシン',
+      'ペックフライマシン',
+      'ケーブルクロスオーバー',
+      'ケーブルフライ',
+    ],
+  },
+  {
+    category: '背中（フリーウエイト）',
+    exercises: [
+      'デッドリフト',
+      'バーベルロウ',
+      'ベントオーバーロウ',
+      'ワンハンドダンベルロウ',
+      '懸垂',
+      'チンニング',
+      'ダンベルシュラッグ',
+      'バーベルシュラッグ',
+    ],
+  },
+  {
+    category: '背中（マシン）',
+    exercises: [
+      'ラットプルダウン',
+      'シーテッドロウ',
+      'Tバーロウ',
+      'ケーブルロウ',
+      'ハイパーエクステンション',
+    ],
+  },
+  {
+    category: '脚（フリーウエイト）',
+    exercises: [
+      'バーベルスクワット',
+      'フロントスクワット',
+      'ブルガリアンスクワット',
+      'ダンベルランジ',
+      'ダンベルスクワット',
+      'ルーマニアンデッドリフト',
+      'ダンベルカーフレイズ',
+      'バーベルカーフレイズ',
+    ],
+  },
+  {
+    category: '脚（マシン）',
+    exercises: [
+      'レッグプレス',
+      'レッグエクステンション',
+      'レッグカール',
+      'ハックスクワット',
+      'アダクション',
+      'アブダクション',
+      'カーフレイズマシン',
+    ],
+  },
+  {
+    category: '肩（フリーウエイト）',
+    exercises: [
+      'ショルダープレス',
+      'ダンベルショルダープレス',
+      'バーベルショルダープレス',
+      'サイドレイズ',
+      'フロントレイズ',
+      'リアレイズ',
+      'ダンベルアップライトロウ',
+      'バーベルアップライトロウ',
+      'フェイスプル',
+    ],
+  },
+  {
+    category: '肩（マシン）',
+    exercises: [
+      'ショルダープレスマシン',
+      'ケーブルサイドレイズ',
+      'ケーブルフロントレイズ',
+      'ケーブルリアレイズ',
+    ],
+  },
+  {
+    category: '腕（上腕二頭筋）',
+    exercises: [
+      'バーベルカール',
+      'ダンベルカール',
+      'ハンマーカール',
+      'インクラインダンベルカール',
+      'コンセントレーションカール',
+      'プリーチャーカール',
+      'ケーブルカール',
+      'EZバーカール',
+    ],
+  },
+  {
+    category: '腕（上腕三頭筋）',
+    exercises: [
+      'トライセップスエクステンション',
+      'ダンベルキックバック',
+      'オーバーヘッドエクステンション',
+      'クローズグリップベンチプレス',
+      'ケーブルプッシュダウン',
+      'ディップス（三頭重視）',
+    ],
+  },
+  {
+    category: '腹筋・体幹',
+    exercises: [
+      'クランチ',
+      'シットアップ',
+      'レッグレイズ',
+      'ハンギングレッグレイズ',
+      'プランク',
+      'サイドプランク',
+      'アブローラー',
+      'ケーブルクランチ',
+      'ロシアンツイスト',
+    ],
+  },
+  {
+    category: 'その他',
+    exercises: ['カスタム入力'],
+  },
 ];
 
 export default function LogScreen() {
@@ -260,6 +390,27 @@ export default function LogScreen() {
     setExercises(newExercises);
   }
 
+  function adjustSetValue(
+    exerciseIndex: number,
+    setIndex: number,
+    field: 'reps' | 'weightKg' | 'rpe',
+    delta: number
+  ) {
+    const newExercises = [...exercises];
+    const set = newExercises[exerciseIndex].sets[setIndex];
+    const current = set[field] || 0;
+    const newValue = Math.max(0, current + delta);
+    
+    // 重量は小数点1桁まで
+    if (field === 'weightKg') {
+      set[field] = Math.round(newValue * 10) / 10;
+    } else {
+      set[field] = Math.round(newValue);
+    }
+    
+    setExercises(newExercises);
+  }
+
   if (mode === 'list') {
     return (
       <ScrollView style={styles.container}>
@@ -436,32 +587,99 @@ export default function LogScreen() {
 
                 {exercise.sets.map((set, setIndex) => (
                   <View key={setIndex} style={styles.setContainer}>
-                    <Text style={styles.setLabel}>{setIndex + 1}セット目</Text>
-                    <View style={styles.setInputs}>
-                      <TextInput
-                        style={[styles.input, styles.setInput]}
-                        value={set.reps ? String(set.reps) : ''}
-                        onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'reps', text)}
-                        placeholder="回数"
-                        keyboardType="numeric"
-                      />
-                      <TextInput
-                        style={[styles.input, styles.setInput]}
-                        value={set.weightKg ? String(set.weightKg) : ''}
-                        onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'weightKg', text)}
-                        placeholder="重量kg"
-                        keyboardType="decimal-pad"
-                      />
-                      <TextInput
-                        style={[styles.input, styles.setInput]}
-                        value={set.rpe ? String(set.rpe) : ''}
-                        onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'rpe', text)}
-                        placeholder="RPE"
-                        keyboardType="numeric"
-                      />
+                    <View style={styles.setHeader}>
+                      <Text style={styles.setLabel}>{setIndex + 1}セット目</Text>
                       <TouchableOpacity onPress={() => removeSet(exerciseIndex, setIndex)}>
-                        <Text style={styles.removeSetButton}>✕</Text>
+                        <Text style={styles.removeSetButton}>削除</Text>
                       </TouchableOpacity>
+                    </View>
+
+                    {/* 回数入力 */}
+                    <View style={styles.setInputRow}>
+                      <Text style={styles.inputLabel}>回数</Text>
+                      <View style={styles.numberInputContainer}>
+                        <TouchableOpacity
+                          style={styles.minusButton}
+                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'reps', -1)}
+                        >
+                          <Text style={styles.buttonText}>−</Text>
+                        </TouchableOpacity>
+                        <TextInput
+                          style={styles.numberInput}
+                          value={set.reps ? String(set.reps) : '0'}
+                          onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'reps', text)}
+                          keyboardType="numeric"
+                        />
+                        <TouchableOpacity
+                          style={styles.plusButton}
+                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'reps', 1)}
+                        >
+                          <Text style={styles.buttonText}>＋</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* 重量入力 */}
+                    <View style={styles.setInputRow}>
+                      <Text style={styles.inputLabel}>重量(kg)</Text>
+                      <View style={styles.numberInputContainer}>
+                        <TouchableOpacity
+                          style={styles.minusButton}
+                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', -2.5)}
+                        >
+                          <Text style={styles.buttonText}>−</Text>
+                        </TouchableOpacity>
+                        <TextInput
+                          style={styles.numberInput}
+                          value={set.weightKg ? String(set.weightKg) : '0'}
+                          onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'weightKg', text)}
+                          keyboardType="decimal-pad"
+                        />
+                        <TouchableOpacity
+                          style={styles.plusButton}
+                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', 2.5)}
+                        >
+                          <Text style={styles.buttonText}>＋</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.quickButton}
+                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', 5)}
+                        >
+                          <Text style={styles.quickButtonText}>+5</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.quickButton}
+                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'weightKg', 10)}
+                        >
+                          <Text style={styles.quickButtonText}>+10</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* RPE入力 */}
+                    <View style={styles.setInputRow}>
+                      <Text style={styles.inputLabel}>RPE</Text>
+                      <View style={styles.numberInputContainer}>
+                        <TouchableOpacity
+                          style={styles.minusButton}
+                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'rpe', -1)}
+                        >
+                          <Text style={styles.buttonText}>−</Text>
+                        </TouchableOpacity>
+                        <TextInput
+                          style={styles.numberInput}
+                          value={set.rpe ? String(set.rpe) : ''}
+                          onChangeText={(text) => updateSet(exerciseIndex, setIndex, 'rpe', text)}
+                          keyboardType="numeric"
+                          placeholder="任意"
+                        />
+                        <TouchableOpacity
+                          style={styles.plusButton}
+                          onPress={() => adjustSetValue(exerciseIndex, setIndex, 'rpe', 1)}
+                        >
+                          <Text style={styles.buttonText}>＋</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
                 ))}
@@ -705,28 +923,87 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   setContainer: {
-    marginBottom: 8,
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  setHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   setLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  setInputs: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  setInput: {
-    flex: 1,
-    padding: 8,
     fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
   },
   removeSetButton: {
     color: '#ff3b30',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  setInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  inputLabel: {
+    width: 80,
+    fontSize: 14,
+    color: '#666',
+  },
+  numberInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  minusButton: {
+    backgroundColor: '#ff3b30',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plusButton: {
+    backgroundColor: '#34C759',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
+  },
+  numberInput: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
     padding: 8,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  quickButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  quickButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   addSetButton: {
     padding: 8,
