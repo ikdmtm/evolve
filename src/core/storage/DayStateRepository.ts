@@ -1,4 +1,4 @@
-import { getDatabase } from './db';
+import * as SQLite from 'expo-sqlite';
 import { Level } from '../domain/stage';
 
 export type DayStateRecord = {
@@ -13,11 +13,17 @@ export type DayStateRecord = {
  * DayState Repository
  */
 export class DayStateRepository {
+  private db: SQLite.SQLiteDatabase;
+
+  constructor() {
+    this.db = SQLite.openDatabaseSync('continue.db');
+  }
+
   /**
    * DayStateを保存または更新
    */
   async upsert(dayState: DayStateRecord): Promise<void> {
-    const db = getDatabase();
+    const db = this.db;
     
     // 後方互換性: stageがあればそれを使用
     const level = dayState.level ?? dayState.stage ?? 0;
@@ -36,7 +42,7 @@ export class DayStateRepository {
    * 複数のDayStateを一括保存
    */
   async upsertMany(dayStates: DayStateRecord[]): Promise<void> {
-    const db = getDatabase();
+    const db = this.db;
 
     await db.withTransactionAsync(async () => {
       for (const dayState of dayStates) {
@@ -59,7 +65,7 @@ export class DayStateRepository {
    * 指定日のDayStateを取得
    */
   async getByDate(date: string): Promise<DayStateRecord | null> {
-    const db = getDatabase();
+    const db = this.db;
 
     const row = await db.getFirstAsync<any>(
       'SELECT * FROM day_states WHERE date = ?',
@@ -76,7 +82,7 @@ export class DayStateRepository {
     fromDate: string,
     toDate: string
   ): Promise<DayStateRecord[]> {
-    const db = getDatabase();
+    const db = this.db;
 
     const rows = await db.getAllAsync<any>(
       'SELECT * FROM day_states WHERE date >= ? AND date <= ? ORDER BY date ASC',
@@ -90,7 +96,7 @@ export class DayStateRepository {
    * 指定日以降のDayStateを取得
    */
   async getFromDate(fromDate: string): Promise<DayStateRecord[]> {
-    const db = getDatabase();
+    const db = this.db;
 
     const rows = await db.getAllAsync<any>(
       'SELECT * FROM day_states WHERE date >= ? ORDER BY date ASC',
@@ -104,7 +110,7 @@ export class DayStateRepository {
    * 最新のDayStateを取得
    */
   async getLatest(): Promise<DayStateRecord | null> {
-    const db = getDatabase();
+    const db = this.db;
 
     const row = await db.getFirstAsync<any>(
       'SELECT * FROM day_states ORDER BY date DESC LIMIT 1'
@@ -117,7 +123,7 @@ export class DayStateRepository {
    * 休息日を設定/解除
    */
   async setRestDay(date: string, isRestDay: boolean): Promise<void> {
-    const db = getDatabase();
+    const db = this.db;
 
     const existing = await this.getByDate(date);
     const level = existing?.level ?? 0;
@@ -129,7 +135,7 @@ export class DayStateRepository {
    * 全DayStateを削除（テスト用）
    */
   async deleteAll(): Promise<void> {
-    const db = getDatabase();
+    const db = this.db;
     await db.runAsync('DELETE FROM day_states');
   }
 

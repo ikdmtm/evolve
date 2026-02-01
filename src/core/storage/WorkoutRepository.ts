@@ -1,15 +1,21 @@
-import { getDatabase } from './db';
+import * as SQLite from 'expo-sqlite';
 import { Workout } from '../domain/models';
 
 /**
  * Workout Repository
  */
 export class WorkoutRepository {
+  private db: SQLite.SQLiteDatabase;
+
+  constructor() {
+    this.db = SQLite.openDatabaseSync('continue.db');
+  }
+
   /**
    * Workoutを作成
    */
   async create(workout: Workout): Promise<void> {
-    const db = getDatabase();
+    const db = this.db;
 
     await db.runAsync(
       `INSERT INTO workouts (id, date, type, title, note, created_at, strength_data, cardio_data, light_data)
@@ -32,7 +38,7 @@ export class WorkoutRepository {
    * IDでWorkoutを取得
    */
   async getById(id: string): Promise<Workout | null> {
-    const db = getDatabase();
+    const db = this.db;
 
     const row = await db.getFirstAsync<any>(
       'SELECT * FROM workouts WHERE id = ?',
@@ -46,7 +52,7 @@ export class WorkoutRepository {
    * 指定日のWorkoutを全て取得
    */
   async getByDate(date: string): Promise<Workout[]> {
-    const db = getDatabase();
+    const db = this.db;
 
     const rows = await db.getAllAsync<any>(
       'SELECT * FROM workouts WHERE date = ? ORDER BY created_at DESC',
@@ -60,7 +66,7 @@ export class WorkoutRepository {
    * 期間内のWorkoutを取得
    */
   async getByDateRange(fromDate: string, toDate: string): Promise<Workout[]> {
-    const db = getDatabase();
+    const db = this.db;
 
     const rows = await db.getAllAsync<any>(
       'SELECT * FROM workouts WHERE date >= ? AND date <= ? ORDER BY date ASC, created_at DESC',
@@ -74,7 +80,7 @@ export class WorkoutRepository {
    * Workoutを更新
    */
   async update(workout: Workout): Promise<void> {
-    const db = getDatabase();
+    const db = this.db;
 
     await db.runAsync(
       `UPDATE workouts
@@ -97,7 +103,7 @@ export class WorkoutRepository {
    * Workoutを削除
    */
   async delete(id: string): Promise<void> {
-    const db = getDatabase();
+    const db = this.db;
     await db.runAsync('DELETE FROM workouts WHERE id = ?', [id]);
   }
 
@@ -105,7 +111,7 @@ export class WorkoutRepository {
    * 全Workoutを削除（テスト用）
    */
   async deleteAll(): Promise<void> {
-    const db = getDatabase();
+    const db = this.db;
     await db.runAsync('DELETE FROM workouts');
   }
 
