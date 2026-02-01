@@ -1701,6 +1701,7 @@ const styles = StyleSheet.create({
   quickButtonsRow: {
     flexDirection: 'row',
     gap: 6,
+    marginLeft: 42, // マイナスボタン(36px) + gap(6px) = 入力フォームの真下に配置
   },
   minusButton: {
     backgroundColor: '#ff3b30',
