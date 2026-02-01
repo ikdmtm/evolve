@@ -8,8 +8,9 @@
 
 ## Domain decisions
 - "軽めでもカウント" => didActivity is true if ANY workout exists on that day.
-- Stage is recomputed from a timeline to avoid inconsistency when editing past days.
+- Level is recomputed from a timeline to avoid inconsistency when editing past days.
 - Day boundary uses local date (YYYY-MM-DD). (Future: allow configurable cutoff time)
+- Level system: 0-10 (11 levels total)
 
 ## User Goal & Character System (2026-02-01)
 
@@ -19,21 +20,21 @@
 
 **🏃 ダイエットモード (diet)**
 - 目標: 痩せる、体を引き締める
-- キャラ成長: デブ（stage 0） → スリム（stage 9）
-- 各ステージで明確な見た目の変化
+- キャラ成長: デブ（Level 0） → スリム（Level 10）
+- 各レベルで明確な見た目の変化
 
 **💪 筋トレモード (muscle)**
 - 目標: 筋肉をつける、体を大きくする
-- キャラ成長: がりがり（stage 0） → ムキムキ（stage 9）
-- 各ステージで明確な見た目の変化
+- キャラ成長: がりがり（Level 0） → ムキムキ（Level 10）
+- 各レベルで明確な見た目の変化
 
 ### 重要な設計方針
 
 1. **記録内容は共通**: 筋トレ・有酸素・軽め活動は両モード共通
-2. **ビジュアルが異なる**: 同じstageでもdiet/muscleで別のキャラ画像
+2. **ビジュアルが異なる**: 同じLevelでもdiet/muscleで別のキャラ画像
 3. **初回起動時に選択**: オンボーディングで目標を選択
 4. **設定でいつでも変更可能**: ユーザーは後から目標を変更できる
-5. **全10ステージで明確な変化**: stage 0→1→2...→9 それぞれ見た目が変わる
+5. **全11レベルで明確な変化**: Level 0→1→2...→10 それぞれ見た目が変わる
 
 ### データ構造
 

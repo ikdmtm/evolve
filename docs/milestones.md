@@ -8,18 +8,20 @@
 - 実機で画面遷移できる
 - クラッシュなし
 
-## M1: Stage Engine (Pure) + Tests
-- stage計算を純粋関数で実装（src/core/domain/stage.ts）
+## M1: Level Engine (Pure) + Tests
+- level計算を純粋関数で実装（src/core/domain/stage.ts）
 - 再計算（timeline）を実装
 - Jestでテストを作る
 ### Gate
 - `npm test` が通る
 - 10日分入力で期待通り ±1 / 休息維持が成立
+- Level範囲: 0-10 (11段階)
 
 ## M2: SQLite + Repos + Migrations
 - テーブル作成（workouts / day_states）
 - CRUD（追加/更新/削除/取得）
 - 過去編集 → 再計算の起点だけ用意
+- day_statesテーブルにlevel列（DBではstage列名だが内部的にはlevel）
 ### Gate
 - 実機で記録が保存され、再起動後も残る
 
@@ -32,24 +34,25 @@
 - その日ログが1件あるだけで didActivity=true になる
 
 ## M4: Home Screen（見た目変化）
-- 今日のstage表示（画像差し替え）
+- 今日のlevel表示（画像差し替え）
 - 今日が休息/活動/未活動を表示
 - 日付切替（昨日/今日など簡易）
+- レベルバーで0-10の11段階を視覚化
 ### Gate
-- 1日でstageが上がる/下がるの挙動が視覚で確認できる
+- 1日でlevelが上がる/下がるの挙動が視覚で確認できる
 
 ## M5: History + Calendar
 - 日ごとの状態（+1/-1/休息）をカレンダー表示
 - タップでその日のログ一覧へ
 ### Gate
 - 直近30日が見える
-- 過去編集でhistoryとstageが一致する
+- 過去編集でhistoryとlevelが一致する
 
 ## M6: Settings (Rest day)
 - 週の固定休息日 + 当日トグル
 - 休息日は下がらないことの保証
 ### Gate
-- 休息日にして何も記録しなくてもstageが下がらない
+- 休息日にして何も記録しなくてもlevelが下がらない
 
 ## M7: Release prep
 - EAS設定

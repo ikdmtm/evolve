@@ -1,12 +1,12 @@
 import {
   recomputeStages,
-  getStageOnDate,
-  getLatestStage,
+  getLevelOnDate,
+  getLatestLevel,
 } from '../../src/core/services/recomputeService';
 
 describe('recomputeService', () => {
   describe('recomputeStages', () => {
-    test('過去日編集時にステージを再計算できる', () => {
+    test('過去日編集時にレベルを再計算できる', () => {
       // 1/1から1/5までのデータがある
       const dayStates = [
         { date: '2026-01-01', isRestDay: false, didActivity: true },  // 0->1
@@ -24,20 +24,20 @@ describe('recomputeService', () => {
       ];
 
       const result = recomputeStages({
-        startStage: 2, // 1/2時点でのステージ
+        startLevel: 2, // 1/2時点でのレベル
         fromDate: '2026-01-03',
         dayStates: modifiedStates,
       });
 
       // 1/3: 2->3, 1/4: 3->4, 1/5: 4->5
       expect(result.timeline).toEqual([
-        { date: '2026-01-03', stage: 3 },
-        { date: '2026-01-04', stage: 4 },
-        { date: '2026-01-05', stage: 5 },
+        { date: '2026-01-03', level: 3 },
+        { date: '2026-01-04', level: 4 },
+        { date: '2026-01-05', level: 5 },
       ]);
     });
 
-    test('休息日変更時にステージを再計算できる', () => {
+    test('休息日変更時にレベルを再計算できる', () => {
       const dayStates = [
         { date: '2026-01-01', isRestDay: false, didActivity: true },  // 0->1
         { date: '2026-01-02', isRestDay: true, didActivity: false },  // 休息日に変更
@@ -45,15 +45,15 @@ describe('recomputeService', () => {
       ];
 
       const result = recomputeStages({
-        startStage: 0,
+        startLevel: 0,
         fromDate: '2026-01-01',
         dayStates,
       });
 
       expect(result.timeline).toEqual([
-        { date: '2026-01-01', stage: 1 },
-        { date: '2026-01-02', stage: 1 }, // 休息日なので維持
-        { date: '2026-01-03', stage: 0 }, // 活動なしで-1
+        { date: '2026-01-01', level: 1 },
+        { date: '2026-01-02', level: 1 }, // 休息日なので維持
+        { date: '2026-01-03', level: 0 }, // 活動なしで-1
       ]);
     });
 
@@ -69,13 +69,13 @@ describe('recomputeService', () => {
       ];
 
       const result = recomputeStages({
-        startStage: 0,
+        startLevel: 0,
         fromDate: '2026-01-01',
         toDate: '2026-01-07',
         dayStates,
       });
 
-      expect(result.timeline.map((t) => t.stage)).toEqual([1, 2, 3, 2, 2, 3, 4]);
+      expect(result.timeline.map((t) => t.level)).toEqual([1, 2, 3, 2, 2, 3, 4]);
       expect(result.timeline.length).toBe(7);
     });
 
@@ -88,7 +88,7 @@ describe('recomputeService', () => {
       ];
 
       const result = recomputeStages({
-        startStage: 0,
+        startLevel: 0,
         fromDate: '2026-01-01',
         toDate: '2026-01-02', // 1/2まで
         dayStates,
@@ -96,47 +96,47 @@ describe('recomputeService', () => {
 
       expect(result.timeline.length).toBe(2);
       expect(result.timeline).toEqual([
-        { date: '2026-01-01', stage: 1 },
-        { date: '2026-01-02', stage: 2 },
+        { date: '2026-01-01', level: 1 },
+        { date: '2026-01-02', level: 2 },
       ]);
     });
   });
 
-  describe('getStageOnDate', () => {
-    test('特定の日付のステージを取得できる', () => {
+  describe('getLevelOnDate', () => {
+    test('特定の日付のレベルを取得できる', () => {
       const timeline = [
-        { date: '2026-01-01', stage: 1 },
-        { date: '2026-01-02', stage: 2 },
-        { date: '2026-01-03', stage: 3 },
+        { date: '2026-01-01', level: 1 },
+        { date: '2026-01-02', level: 2 },
+        { date: '2026-01-03', level: 3 },
       ];
 
-      expect(getStageOnDate(timeline, '2026-01-02')).toBe(2);
-      expect(getStageOnDate(timeline, '2026-01-03')).toBe(3);
+      expect(getLevelOnDate(timeline, '2026-01-02')).toBe(2);
+      expect(getLevelOnDate(timeline, '2026-01-03')).toBe(3);
     });
 
     test('存在しない日付の場合はundefinedを返す', () => {
       const timeline = [
-        { date: '2026-01-01', stage: 1 },
-        { date: '2026-01-02', stage: 2 },
+        { date: '2026-01-01', level: 1 },
+        { date: '2026-01-02', level: 2 },
       ];
 
-      expect(getStageOnDate(timeline, '2026-01-05')).toBeUndefined();
+      expect(getLevelOnDate(timeline, '2026-01-05')).toBeUndefined();
     });
   });
 
-  describe('getLatestStage', () => {
-    test('最新のステージを取得できる', () => {
+  describe('getLatestLevel', () => {
+    test('最新のレベルを取得できる', () => {
       const timeline = [
-        { date: '2026-01-01', stage: 1 },
-        { date: '2026-01-02', stage: 2 },
-        { date: '2026-01-03', stage: 5 },
+        { date: '2026-01-01', level: 1 },
+        { date: '2026-01-02', level: 2 },
+        { date: '2026-01-03', level: 5 },
       ];
 
-      expect(getLatestStage(timeline)).toBe(5);
+      expect(getLatestLevel(timeline)).toBe(5);
     });
 
     test('空のタイムラインの場合はundefinedを返す', () => {
-      expect(getLatestStage([])).toBeUndefined();
+      expect(getLatestLevel([])).toBeUndefined();
     });
   });
 });

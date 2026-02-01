@@ -6,7 +6,7 @@ import { getTodayDate, formatDateJP } from '../src/utils/date';
 
 export default function HomeScreen() {
   const [currentDate, setCurrentDate] = useState(getTodayDate());
-  const [stage, setStage] = useState<number>(0);
+  const [level, setLevel] = useState<number>(0);
   const [isRestDay, setIsRestDay] = useState(false);
   const [hasActivity, setHasActivity] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -24,9 +24,9 @@ export default function HomeScreen() {
       const dayStateRepo = new DayStateRepository();
       const workoutRepo = new WorkoutRepository();
 
-      // ステージと休息日情報を取得
+      // レベルと休息日情報を取得
       const dayState = await dayStateRepo.getByDate(currentDate);
-      setStage(dayState?.stage ?? 0);
+      setLevel(dayState?.level ?? 0);
       setIsRestDay(dayState?.isRestDay ?? false);
 
       // その日の活動記録を確認
@@ -113,27 +113,27 @@ export default function HomeScreen() {
       <View style={styles.characterContainer}>
         <View style={[styles.characterPlaceholder, { borderColor: getStatusColor() }]}>
           <Text style={styles.characterText}>キャラクター</Text>
-          <Text style={styles.characterSubtext}>Stage {stage}</Text>
+          <Text style={styles.characterSubtext}>Level {level}</Text>
         </View>
       </View>
 
-      {/* ステージ表示 */}
-      <View style={styles.stageContainer}>
-        <Text style={styles.stageLabel}>現在のステージ</Text>
-        <View style={styles.stageBar}>
-          {[...Array(10)].map((_, i) => (
+      {/* レベル表示 */}
+      <View style={styles.levelContainer}>
+        <Text style={styles.levelLabel}>現在のレベル</Text>
+        <View style={styles.levelBar}>
+          {[...Array(11)].map((_, i) => (
             <View
               key={i}
               style={[
-                styles.stageSegment,
-                i <= stage && styles.stageSegmentActive,
+                styles.levelSegment,
+                i <= level && styles.levelSegmentActive,
               ]}
             />
           ))}
         </View>
-        <View style={styles.stageRange}>
-          <Text style={styles.stageRangeText}>0</Text>
-          <Text style={styles.stageRangeText}>9</Text>
+        <View style={styles.levelRange}>
+          <Text style={styles.levelRangeText}>0</Text>
+          <Text style={styles.levelRangeText}>10</Text>
         </View>
       </View>
 
@@ -147,12 +147,12 @@ export default function HomeScreen() {
 
       {/* 説明 */}
       <View style={styles.infoContainer}>
-        <Text style={styles.infoTitle}>ステージについて</Text>
+        <Text style={styles.infoTitle}>レベルについて</Text>
         <Text style={styles.infoText}>
-          • 活動を記録するとステージが上がります{'\n'}
-          • 何もしないとステージが下がります{'\n'}
+          • 活動を記録するとレベルが上がります{'\n'}
+          • 何もしないとレベルが下がります{'\n'}
           • 休息日は下がりません{'\n'}
-          • ステージは0〜9の10段階です
+          • レベルは0〜10の11段階です
         </Text>
       </View>
     </ScrollView>
@@ -243,37 +243,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  stageContainer: {
+  levelContainer: {
     backgroundColor: '#fff',
     padding: 20,
     borderRadius: 12,
     marginBottom: 16,
   },
-  stageLabel: {
+  levelLabel: {
     fontSize: 14,
     color: '#666',
     marginBottom: 12,
     fontWeight: '600',
   },
-  stageBar: {
+  levelBar: {
     flexDirection: 'row',
     gap: 4,
     marginBottom: 8,
   },
-  stageSegment: {
+  levelSegment: {
     flex: 1,
     height: 12,
     backgroundColor: '#e0e0e0',
     borderRadius: 6,
   },
-  stageSegmentActive: {
+  levelSegmentActive: {
     backgroundColor: '#007AFF',
   },
-  stageRange: {
+  levelRange: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  stageRangeText: {
+  levelRangeText: {
     fontSize: 12,
     color: '#999',
   },
