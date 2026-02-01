@@ -500,7 +500,7 @@ export default function LogScreen() {
   }
 
   // 前回の記録を取得
-  async function loadPreviousRecord(exerciseName: string) {
+  async function loadPreviousRecord(exerciseName: string): Promise<Array<{ reps?: number; weightKg?: number; rpe?: number; }> | null> {
     try {
       // 今日より前の記録を取得（最大30日前まで）
       const thirtyDaysAgo = new Date();
@@ -518,9 +518,9 @@ export default function LogScreen() {
         if (workout.strength && workout.strength.exercises) {
           const exercise = workout.strength.exercises.find(e => e.name === exerciseName);
           if (exercise && exercise.sets.length > 0) {
-            // 前回の記録を保存
+            // 前回の記録を保存して返す
             setPreviousRecords(prev => new Map(prev).set(exerciseName, exercise.sets));
-            return;
+            return exercise.sets;
           }
         }
       }
@@ -531,8 +531,10 @@ export default function LogScreen() {
         newMap.delete(exerciseName);
         return newMap;
       });
+      return null;
     } catch (error) {
       console.error('Failed to load previous record:', error);
+      return null;
     }
   }
 
@@ -550,15 +552,13 @@ export default function LogScreen() {
       setShowExerciseModal(false);
     } else {
       // 新規種目を追加（前回の記録から初期値を取得）
-      await loadPreviousRecord(name);
+      const previousSets = await loadPreviousRecord(name);
       
-      setExercises(currentExercises => {
-        const previousSets = previousRecords.get(name);
-        const initialSet = previousSets && previousSets.length > 0 
-          ? { ...previousSets[0] }
-          : { reps: 10, weightKg: 0 };
-        return [...currentExercises, { name, sets: [initialSet] }];
-      });
+      const initialSet = previousSets && previousSets.length > 0 
+        ? { ...previousSets[0] }
+        : { reps: 10, weightKg: 0 };
+      
+      setExercises(currentExercises => [...currentExercises, { name, sets: [initialSet] }]);
       setShowExerciseModal(false);
     }
   }
@@ -576,15 +576,13 @@ export default function LogScreen() {
       setShowExerciseModal(false);
     } else {
       // カスタム種目でも前回の記録を探す
-      await loadPreviousRecord(name);
+      const previousSets = await loadPreviousRecord(name);
       
-      setExercises(currentExercises => {
-        const previousSets = previousRecords.get(name);
-        const initialSet = previousSets && previousSets.length > 0 
-          ? { ...previousSets[0] }
-          : { reps: 10, weightKg: 0 };
-        return [...currentExercises, { name, sets: [initialSet] }];
-      });
+      const initialSet = previousSets && previousSets.length > 0 
+        ? { ...previousSets[0] }
+        : { reps: 10, weightKg: 0 };
+      
+      setExercises(currentExercises => [...currentExercises, { name, sets: [initialSet] }]);
       setShowExerciseModal(false);
     }
   }
@@ -1281,21 +1279,24 @@ export default function LogScreen() {
           </View>
 
           <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              value={exerciseSearchQuery}
-              onChangeText={setExerciseSearchQuery}
-              placeholder="種目を検索..."
-              autoCapitalize="none"
-            />
-            {exerciseSearchQuery.length > 0 && (
-              <TouchableOpacity
-                style={styles.clearSearchButton}
-                onPress={() => setExerciseSearchQuery('')}
-              >
-                <Text style={styles.clearSearchText}>✕</Text>
-              </TouchableOpacity>
-            )}
+            <Text style={styles.searchLabel}>検索</Text>
+            <View style={styles.searchInputWrapper}>
+              <TextInput
+                style={styles.searchInput}
+                value={exerciseSearchQuery}
+                onChangeText={setExerciseSearchQuery}
+                placeholder="種目を検索..."
+                autoCapitalize="none"
+              />
+              {exerciseSearchQuery.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearSearchButton}
+                  onPress={() => setExerciseSearchQuery('')}
+                >
+                  <Text style={styles.clearSearchText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           <ScrollView style={styles.modalScroll}>
@@ -1351,21 +1352,24 @@ export default function LogScreen() {
           </View>
 
           <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              value={activitySearchQuery}
-              onChangeText={setActivitySearchQuery}
-              placeholder="活動を検索..."
-              autoCapitalize="none"
-            />
-            {activitySearchQuery.length > 0 && (
-              <TouchableOpacity
-                style={styles.clearSearchButton}
-                onPress={() => setActivitySearchQuery('')}
-              >
-                <Text style={styles.clearSearchText}>✕</Text>
-              </TouchableOpacity>
-            )}
+            <Text style={styles.searchLabel}>検索</Text>
+            <View style={styles.searchInputWrapper}>
+              <TextInput
+                style={styles.searchInput}
+                value={activitySearchQuery}
+                onChangeText={setActivitySearchQuery}
+                placeholder="活動を検索..."
+                autoCapitalize="none"
+              />
+              {activitySearchQuery.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearSearchButton}
+                  onPress={() => setActivitySearchQuery('')}
+                >
+                  <Text style={styles.clearSearchText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           <ScrollView style={styles.modalScroll}>
@@ -1867,6 +1871,15 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  searchLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  searchInputWrapper: {
+    position: 'relative',
   },
   searchInput: {
     backgroundColor: '#f8f9fa',
