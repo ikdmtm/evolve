@@ -15,14 +15,19 @@ const WEEKDAYS = [
   { id: 6, label: '土曜日', short: '土' },
 ];
 
+const MAX_FIXED_REST_DAYS = 6; // 最大6日まで
+const MAX_MANUAL_REST_DAYS_PER_WEEK = 2; // 週2回まで
+
 export default function SettingsScreen() {
   const [fixedRestDays, setFixedRestDays] = useState<number[]>([]);
   const [isTodayRestDay, setIsTodayRestDay] = useState(false);
+  const [canSetRestDay, setCanSetRestDay] = useState(true);
+  const [restrictionReason, setRestrictionReason] = useState<string>('');
+  const [manualRestDaysCount, setManualRestDaysCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const today = getTodayDate();
 
-  // 画面フォーカス時にデータを再読み込み
   useFocusEffect(
     useCallback(() => {
       loadSettings();
@@ -42,9 +47,11 @@ export default function SettingsScreen() {
       const todayState = await dayStateRepo.getByDate(today);
       setIsTodayRestDay(todayState?.isRestDay ?? false);
       
-      // TODO: 固定休息日の設定を取得（将来的にはSettingsRepositoryから）
-      // 現在は空配列
+      // 固定休息日の設定を取得（将来的にはSettingsRepositoryから）
       setFixedRestDays([]);
+      
+      // 休息日設定可否をチェック
+      await checkCanSetRestDay();
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -52,11 +59,60 @@ export default function SettingsScreen() {
     }
   }
 
-  async function toggleTodayRestDay(value: boolean) {
+  async function checkCanSetRestDay() {
     try {
       const dayStateRepo = new DayStateRepository();
       
-      // 今日のDayStateを取得または作成
+      // 1. 前日が休息日かチェック
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+      const yesterdayState = await dayStateRepo.getByDate(yesterdayStr);
+      
+      if (yesterdayState?.isRestDay) {
+        setCanSetRestDay(false);
+        setRestrictionReason('前日が休息日のため、連続で設定できません');
+        return;
+      }
+      
+      // 2. 直近7日間の手動休息日カウント（固定休息日を除く）
+      let manualRestCount = 0;
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        
+        const dayState = await dayStateRepo.getByDate(dateStr);
+        // 固定休息日でない休息日をカウント
+        // 将来的には固定休息日を除外する判定を追加
+        if (dayState?.isRestDay && dateStr !== today) {
+          manualRestCount++;
+        }
+      }
+      
+      setManualRestDaysCount(manualRestCount);
+      
+      if (manualRestCount >= MAX_MANUAL_REST_DAYS_PER_WEEK) {
+        setCanSetRestDay(false);
+        setRestrictionReason(`直近7日間で${MAX_MANUAL_REST_DAYS_PER_WEEK}回使用済みです`);
+        return;
+      }
+      
+      setCanSetRestDay(true);
+      setRestrictionReason('');
+    } catch (error) {
+      console.error('Failed to check rest day availability:', error);
+    }
+  }
+
+  async function toggleTodayRestDay(value: boolean) {
+    if (value && !canSetRestDay) {
+      Alert.alert('設定できません', restrictionReason);
+      return;
+    }
+    
+    try {
+      const dayStateRepo = new DayStateRepository();
       const todayState = await dayStateRepo.getByDate(today);
       
       await dayStateRepo.upsert({
@@ -66,10 +122,18 @@ export default function SettingsScreen() {
       });
       
       setIsTodayRestDay(value);
-      Alert.alert(
-        '設定完了',
-        value ? '今日を休息日に設定しました' : '今日の休息日を解除しました'
-      );
+      
+      if (value) {
+        Alert.alert(
+          '設定完了',
+          `今日を休息日に設定しました\n\n残り使用可能回数: ${MAX_MANUAL_REST_DAYS_PER_WEEK - manualRestDaysCount - 1}回/週`
+        );
+      } else {
+        Alert.alert('設定解除', '今日の休息日を解除しました');
+      }
+      
+      // 再チェック
+      await checkCanSetRestDay();
     } catch (error) {
       console.error('Failed to toggle rest day:', error);
       Alert.alert('エラー', '休息日の設定に失敗しました');
@@ -81,6 +145,14 @@ export default function SettingsScreen() {
       if (prev.includes(dayId)) {
         return prev.filter(d => d !== dayId);
       } else {
+        // 最大6日までの制限
+        if (prev.length >= MAX_FIXED_REST_DAYS) {
+          Alert.alert(
+            '選択できません',
+            `固定休息日は最大${MAX_FIXED_REST_DAYS}日までです。\n最低週1日は活動する日が必要です。`
+          );
+          return prev;
+        }
         return [...prev, dayId].sort();
       }
     });
@@ -100,20 +172,41 @@ export default function SettingsScreen() {
         
         {/* 今日を休息日にする */}
         <View style={styles.card}>
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>今日を休息日にする</Text>
-              <Text style={styles.settingDescription}>
-                {today} • 休息日は活動がなくてもレベルが下がりません
-              </Text>
+          <View style={styles.settingItemColumn}>
+            <View style={styles.settingHeader}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>今日を休息日にする</Text>
+                <Text style={styles.settingDescription}>
+                  急な用事で運動できない時に使用
+                </Text>
+              </View>
+              <Switch
+                value={isTodayRestDay}
+                onValueChange={toggleTodayRestDay}
+                trackColor={{ false: colors.border, true: colors.primary + '60' }}
+                thumbColor={isTodayRestDay ? colors.primary : colors.textMuted}
+                disabled={loading || (!isTodayRestDay && !canSetRestDay)}
+              />
             </View>
-            <Switch
-              value={isTodayRestDay}
-              onValueChange={toggleTodayRestDay}
-              trackColor={{ false: colors.border, true: colors.primary + '60' }}
-              thumbColor={isTodayRestDay ? colors.primary : colors.textMuted}
-              disabled={loading}
-            />
+            
+            {/* 制限情報 */}
+            <View style={styles.restrictionInfo}>
+              {!canSetRestDay && !isTodayRestDay ? (
+                <View style={styles.restrictionBadge}>
+                  <Text style={styles.restrictionText}>🚫 {restrictionReason}</Text>
+                </View>
+              ) : (
+                <View style={styles.usageInfo}>
+                  <Text style={styles.usageText}>
+                    📊 使用状況: {manualRestDaysCount}/{MAX_MANUAL_REST_DAYS_PER_WEEK}回/週
+                  </Text>
+                  <Text style={styles.usageSubtext}>
+                    • 連続使用: 不可{'\n'}
+                    • 週の上限: {MAX_MANUAL_REST_DAYS_PER_WEEK}回まで
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
@@ -122,7 +215,9 @@ export default function SettingsScreen() {
           <View style={styles.settingItemColumn}>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>固定休息日</Text>
-              <Text style={styles.settingDescription}>毎週の休息日を設定（複数選択可）</Text>
+              <Text style={styles.settingDescription}>
+                毎週の休息日を設定（最大{MAX_FIXED_REST_DAYS}日）
+              </Text>
             </View>
             <View style={styles.weekdayGrid}>
               {WEEKDAYS.map(day => (
@@ -145,6 +240,11 @@ export default function SettingsScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
+            </View>
+            <View style={styles.fixedRestInfo}>
+              <Text style={styles.fixedRestText}>
+                選択中: {fixedRestDays.length}/{MAX_FIXED_REST_DAYS}日
+              </Text>
             </View>
             {fixedRestDays.length > 0 && (
               <View style={styles.comingSoonBadge}>
@@ -269,6 +369,11 @@ const styles = StyleSheet.create({
   settingItemColumn: {
     padding: spacing.md,
   },
+  settingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   settingInfo: {
     flex: 1,
   },
@@ -288,12 +393,59 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     marginHorizontal: spacing.md,
   },
+  
+  // 制限情報
+  restrictionInfo: {
+    marginTop: spacing.md,
+  },
+  restrictionBadge: {
+    backgroundColor: colors.danger + '20',
+    padding: spacing.sm,
+    borderRadius: radius.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.danger,
+  },
+  restrictionText: {
+    fontSize: 13,
+    color: colors.danger,
+    fontWeight: '600',
+  },
+  usageInfo: {
+    backgroundColor: colors.backgroundLight,
+    padding: spacing.sm,
+    borderRadius: radius.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  usageText: {
+    fontSize: 13,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  usageSubtext: {
+    fontSize: 11,
+    color: colors.textMuted,
+    lineHeight: 16,
+  },
+  
+  // 固定休息日
+  fixedRestInfo: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  fixedRestText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  
   comingSoonBadge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     backgroundColor: colors.backgroundLight,
     borderRadius: radius.xs,
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
   comingSoonText: {
     fontSize: 10,
