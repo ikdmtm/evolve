@@ -3,10 +3,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { WorkoutRepository } from '../src/core/storage/WorkoutRepository';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
-import { SettingsRepository } from '../src/core/storage/SettingsRepository';
+import { SettingsRepository, CharacterType, CharacterGender } from '../src/core/storage/SettingsRepository';
 import { getTodayDate, formatDateJP } from '../src/utils/date';
 import { getLevelColor, shadows, radius, spacing } from '../src/theme/colors';
 import { useTheme } from '../src/context/ThemeContext';
+import { LevelDisplay } from '../src/ui/components/LevelDisplay';
+import { CharacterDisplay } from '../src/ui/components/CharacterDisplay';
 
 export default function HomeScreen() {
   const { colors } = useTheme();
@@ -15,6 +17,8 @@ export default function HomeScreen() {
   const [isRestDay, setIsRestDay] = useState(false);
   const [hasActivity, setHasActivity] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [characterType, setCharacterType] = useState<CharacterType>('simple');
+  const [characterGender, setCharacterGender] = useState<CharacterGender>('male');
 
   const today = getTodayDate();
 
@@ -50,6 +54,12 @@ export default function HomeScreen() {
 
       const workouts = await workoutRepo.getByDate(currentDate);
       setHasActivity(workouts.length > 0);
+
+      // キャラクター設定を読み込み
+      const charType = await settingsRepo.getCharacterType();
+      const charGender = await settingsRepo.getCharacterGender();
+      setCharacterType(charType);
+      setCharacterGender(charGender);
     } catch (error) {
       console.error('Failed to load day data:', error);
     } finally {
@@ -137,18 +147,18 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* メインカード - キャラクター & レベル */}
+      {/* メインカード - レベル可視化 */}
       <View style={[styles.mainCard, { backgroundColor: colors.backgroundCard }]}>
-        {/* キャラクター表示エリア */}
         <View style={styles.characterArea}>
-          <View style={[styles.characterCircle, { borderColor: levelColor, backgroundColor: colors.backgroundLight }]}>
-            <Text style={styles.characterEmoji}>
-              {level >= 8 ? '🦁' : level >= 5 ? '🐕' : level >= 2 ? '🐱' : '🐣'}
-            </Text>
-          </View>
-          <View style={[styles.levelBadge, { backgroundColor: colors.background, borderColor: colors.backgroundCard }]}>
-            <Text style={[styles.levelBadgeText, { color: levelColor }]}>Lv.{level}</Text>
-          </View>
+          {characterType === 'simple' ? (
+            <LevelDisplay level={level} levelColor={levelColor} colors={colors} />
+          ) : (
+            <CharacterDisplay 
+              level={level} 
+              characterType={characterType} 
+              characterGender={characterGender} 
+            />
+          )}
         </View>
 
         {/* レベルバー */}
@@ -288,31 +298,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xl,
   },
-  characterCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...shadows.large,
-  },
-  characterEmoji: {
-    fontSize: 64,
-  },
-  levelBadge: {
-    marginTop: -16,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    borderWidth: 2,
-  },
-  levelBadgeText: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  
+
   // レベルセクション
   levelSection: {
     marginTop: spacing.sm,
