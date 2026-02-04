@@ -9,10 +9,14 @@ import * as SQLite from 'expo-sqlite';
  */
 
 export type Theme = 'light' | 'dark';
+export type CharacterType = 'simple' | 'muscle' | 'diet';
+export type CharacterGender = 'male' | 'female';
 
 export interface Settings {
   fixedRestDays: number[]; // 0=日曜, 1=月曜, ..., 6=土曜
   theme: Theme;
+  characterType: CharacterType; // キャラクタータイプ: simple(シンプル), muscle(筋トレ), diet(ダイエット)
+  characterGender: CharacterGender; // キャラクターの性別: male(男性), female(女性)
 }
 
 export class SettingsRepository {
@@ -30,14 +34,16 @@ export class SettingsRepository {
       CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         fixed_rest_days TEXT NOT NULL DEFAULT '[]',
-        theme TEXT NOT NULL DEFAULT 'dark'
+        theme TEXT NOT NULL DEFAULT 'light',
+        character_type TEXT NOT NULL DEFAULT 'muscle',
+        character_gender TEXT NOT NULL DEFAULT 'male'
       );
     `);
 
     // デフォルト設定を挿入（存在しない場合のみ）
     await this.db.execAsync(`
-      INSERT OR IGNORE INTO settings (id, fixed_rest_days, theme)
-      VALUES (1, '[]', 'dark');
+      INSERT OR IGNORE INTO settings (id, fixed_rest_days, theme, character_type, character_gender)
+      VALUES (1, '[]', 'light', 'muscle', 'male');
     `);
   }
 
@@ -46,23 +52,40 @@ export class SettingsRepository {
    */
   async get(): Promise<Settings> {
     try {
-      const result = await this.db.getFirstAsync<{ fixed_rest_days: string; theme?: string }>(
-        'SELECT fixed_rest_days, theme FROM settings WHERE id = 1'
+      const result = await this.db.getFirstAsync<{ 
+        fixed_rest_days: string; 
+        theme?: string;
+        character_type?: string;
+        character_gender?: string;
+      }>(
+        'SELECT fixed_rest_days, theme, character_type, character_gender FROM settings WHERE id = 1'
       );
 
       if (!result) {
         // デフォルト設定を返す
-        return { fixedRestDays: [], theme: 'dark' };
+        return { 
+          fixedRestDays: [], 
+          theme: 'light',
+          characterType: 'muscle',
+          characterGender: 'male'
+        };
       }
 
       return {
         fixedRestDays: JSON.parse(result.fixed_rest_days),
-        theme: (result.theme || 'dark') as Theme,
+        theme: (result.theme || 'light') as Theme,
+        characterType: (result.character_type || 'muscle') as CharacterType,
+        characterGender: (result.character_gender || 'male') as CharacterGender,
       };
     } catch (error) {
-      // themeカラムが存在しない場合など、エラーをキャッチしてデフォルト値を返す
+      // カラムが存在しない場合など、エラーをキャッチしてデフォルト値を返す
       console.warn('Failed to get settings, using defaults:', error);
-      return { fixedRestDays: [], theme: 'dark' };
+      return { 
+        fixedRestDays: [], 
+        theme: 'light',
+        characterType: 'muscle',
+        characterGender: 'male'
+      };
     }
   }
 
@@ -120,7 +143,61 @@ export class SettingsRepository {
       return settings.theme;
     } catch (error) {
       console.warn('Failed to get theme, using default:', error);
-      return 'dark';
+      return 'light';
+    }
+  }
+
+  /**
+   * キャラクタータイプを保存
+   */
+  async setCharacterType(characterType: CharacterType): Promise<void> {
+    try {
+      await this.db.runAsync(
+        'UPDATE settings SET character_type = ? WHERE id = 1',
+        [characterType]
+      );
+    } catch (error) {
+      console.warn('Failed to set character type:', error);
+    }
+  }
+
+  /**
+   * キャラクタータイプを取得
+   */
+  async getCharacterType(): Promise<CharacterType> {
+    try {
+      const settings = await this.get();
+      return settings.characterType;
+    } catch (error) {
+      console.warn('Failed to get character type, using default:', error);
+      return 'muscle';
+    }
+  }
+
+  /**
+   * キャラクターの性別を保存
+   */
+  async setCharacterGender(characterGender: CharacterGender): Promise<void> {
+    try {
+      await this.db.runAsync(
+        'UPDATE settings SET character_gender = ? WHERE id = 1',
+        [characterGender]
+      );
+    } catch (error) {
+      console.warn('Failed to set character gender:', error);
+    }
+  }
+
+  /**
+   * キャラクターの性別を取得
+   */
+  async getCharacterGender(): Promise<CharacterGender> {
+    try {
+      const settings = await this.get();
+      return settings.characterGender;
+    } catch (error) {
+      console.warn('Failed to get character gender, using default:', error);
+      return 'male';
     }
   }
 }

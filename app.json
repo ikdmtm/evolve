@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "FitMorph",
-    "slug": "fitmorph",
+    "name": "Evolve",
+    "slug": "evolve",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "scheme": "fitmorph",
+    "scheme": "evolve",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.fitmorph.app",
+      "bundleIdentifier": "com.evolve.app",
       "infoPlist": {
         "NSCameraUsageDescription": "このアプリはカメラを使用しません",
         "NSPhotoLibraryUsageDescription": "このアプリは写真ライブラリを使用しません"
@@ -25,7 +25,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.fitmorph.app"
+      "package": "com.evolve.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",

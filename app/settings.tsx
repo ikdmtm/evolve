@@ -1,10 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Linking } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { shadows, radius, spacing, darkColors } from '../src/theme/colors';
 import { useTheme } from '../src/context/ThemeContext';
 import { DayStateRepository } from '../src/core/storage/DayStateRepository';
-import { SettingsRepository } from '../src/core/storage/SettingsRepository';
+import { SettingsRepository, CharacterType, CharacterGender } from '../src/core/storage/SettingsRepository';
 import { getTodayDate } from '../src/utils/date';
 
 // StyleSheet用の静的カラー（後方互換性）
@@ -31,6 +31,8 @@ export default function SettingsScreen() {
   const [restrictionReason, setRestrictionReason] = useState<string>('');
   const [manualRestDaysCount, setManualRestDaysCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [characterType, setCharacterType] = useState<CharacterType>('simple');
+  const [characterGender, setCharacterGender] = useState<CharacterGender>('male');
 
   const today = getTodayDate();
 
@@ -57,6 +59,12 @@ export default function SettingsScreen() {
       // 固定休息日の設定を取得
       const fixedDays = await settingsRepo.getFixedRestDays();
       setFixedRestDays(fixedDays);
+      
+      // キャラクター設定を取得
+      const charType = await settingsRepo.getCharacterType();
+      const charGender = await settingsRepo.getCharacterGender();
+      setCharacterType(charType);
+      setCharacterGender(charGender);
       
       // 休息日設定可否をチェック
       await checkCanSetRestDay(fixedDays);
@@ -197,6 +205,28 @@ export default function SettingsScreen() {
     }
   }
 
+  async function updateCharacterType(type: CharacterType) {
+    try {
+      const settingsRepo = new SettingsRepository();
+      await settingsRepo.setCharacterType(type);
+      setCharacterType(type);
+    } catch (error) {
+      console.error('Failed to update character type:', error);
+      Alert.alert('エラー', 'キャラクタータイプの設定に失敗しました');
+    }
+  }
+
+  async function updateCharacterGender(gender: CharacterGender) {
+    try {
+      const settingsRepo = new SettingsRepository();
+      await settingsRepo.setCharacterGender(gender);
+      setCharacterGender(gender);
+    } catch (error) {
+      console.error('Failed to update character gender:', error);
+      Alert.alert('エラー', '性別の設定に失敗しました');
+    }
+  }
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* ヘッダー */}
@@ -301,6 +331,123 @@ export default function SettingsScreen() {
       {/* 表示設定セクション */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>表示設定</Text>
+        
+        {/* キャラクター設定 */}
+        <View style={[styles.card, { backgroundColor: colors.backgroundCard, marginBottom: spacing.md }]}>
+          <View style={styles.settingItemColumn}>
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>キャラクタータイプ</Text>
+              <Text style={[styles.settingDescription, { color: colors.textMuted }]}>
+                表示するキャラクターを選択
+              </Text>
+            </View>
+            <View style={styles.optionGrid}>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  { backgroundColor: colors.backgroundLight, borderColor: colors.border },
+                  characterType === 'simple' && { backgroundColor: colors.primary + '30', borderColor: colors.primary },
+                ]}
+                onPress={() => updateCharacterType('simple')}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.optionButtonText,
+                  { color: colors.textSecondary },
+                  characterType === 'simple' && { color: colors.primary, fontWeight: '700' },
+                ]}>
+                  シンプル
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  { backgroundColor: colors.backgroundLight, borderColor: colors.border },
+                  characterType === 'muscle' && { backgroundColor: colors.primary + '30', borderColor: colors.primary },
+                ]}
+                onPress={() => updateCharacterType('muscle')}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.optionButtonText,
+                  { color: colors.textSecondary },
+                  characterType === 'muscle' && { color: colors.primary, fontWeight: '700' },
+                ]}>
+                  筋トレ
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  { backgroundColor: colors.backgroundLight, borderColor: colors.border },
+                  characterType === 'diet' && { backgroundColor: colors.primary + '30', borderColor: colors.primary },
+                ]}
+                onPress={() => updateCharacterType('diet')}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.optionButtonText,
+                  { color: colors.textSecondary },
+                  characterType === 'diet' && { color: colors.primary, fontWeight: '700' },
+                ]}>
+                  ダイエット
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* 性別設定 */}
+        {characterType !== 'simple' && (
+          <View style={[styles.card, { backgroundColor: colors.backgroundCard, marginBottom: spacing.md }]}>
+            <View style={styles.settingItemColumn}>
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>性別</Text>
+                <Text style={[styles.settingDescription, { color: colors.textMuted }]}>
+                  キャラクターの性別を選択
+                </Text>
+              </View>
+              <View style={styles.optionGrid}>
+                <TouchableOpacity
+                  style={[
+                    styles.optionButton,
+                    { backgroundColor: colors.backgroundLight, borderColor: colors.border },
+                    characterGender === 'male' && { backgroundColor: colors.primary + '30', borderColor: colors.primary },
+                  ]}
+                  onPress={() => updateCharacterGender('male')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.optionButtonText,
+                    { color: colors.textSecondary },
+                    characterGender === 'male' && { color: colors.primary, fontWeight: '700' },
+                  ]}>
+                    男性
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.optionButton,
+                    { backgroundColor: colors.backgroundLight, borderColor: colors.border },
+                    characterGender === 'female' && { backgroundColor: colors.primary + '30', borderColor: colors.primary },
+                  ]}
+                  onPress={() => updateCharacterGender('female')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.optionButtonText,
+                    { color: colors.textSecondary },
+                    characterGender === 'female' && { color: colors.primary, fontWeight: '700' },
+                  ]}>
+                    女性
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* ダークモード */}
         <View style={[styles.card, { backgroundColor: colors.backgroundCard }]}>
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
@@ -323,13 +470,12 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>データ管理</Text>
         <View style={[styles.card, { backgroundColor: colors.backgroundCard }]}>
-          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+          <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
-              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>データをエクスポート</Text>
-              <Text style={[styles.settingDescription, { color: colors.textMuted }]}>記録をファイルに保存</Text>
+              <Text style={[styles.settingLabel, { color: colors.textMuted }]}>データをエクスポート</Text>
+              <Text style={[styles.settingDescription, { color: colors.textMuted }]}>Coming Soon</Text>
             </View>
-            <Text style={[styles.chevron, { color: colors.textMuted }]}>▶</Text>
-          </TouchableOpacity>
+          </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingInfo}>
@@ -351,6 +497,28 @@ export default function SettingsScreen() {
             </View>
             <Text style={[styles.versionText, { color: colors.textSecondary }]}>0.1.0</Text>
           </View>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            activeOpacity={0.7}
+            onPress={() => Linking.openURL('https://ikdmtm.github.io/evolve-docs/privacy.html')}
+          >
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingLabelSmall, { color: colors.textSecondary }]}>プライバシーポリシー</Text>
+            </View>
+            <Text style={[styles.chevron, { color: colors.textMuted }]}>▶</Text>
+          </TouchableOpacity>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            activeOpacity={0.7}
+            onPress={() => Linking.openURL('https://ikdmtm.github.io/evolve-docs/support.html')}
+          >
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingLabelSmall, { color: colors.textSecondary }]}>サポート</Text>
+            </View>
+            <Text style={[styles.chevron, { color: colors.textMuted }]}>▶</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -423,6 +591,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 2,
+  },
+  settingLabelSmall: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   settingDescription: {
     fontSize: 12,
@@ -509,6 +681,28 @@ const styles = StyleSheet.create({
   weekdayButtonText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  
+  // オプション選択グリッド
+  optionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  optionButton: {
+    flexBasis: '30%',
+    flexGrow: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  optionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   
   // フッター

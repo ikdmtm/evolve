@@ -42,6 +42,7 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     { version: 1, fn: migration_v1 },
     { version: 2, fn: migration_v2 },
     { version: 3, fn: migration_v3 },
+    { version: 4, fn: migration_v4 },
   ];
 
   for (const migration of migrations) {
@@ -133,5 +134,31 @@ async function migration_v3(database: SQLite.SQLiteDatabase): Promise<void> {
       ALTER TABLE settings ADD COLUMN theme TEXT NOT NULL DEFAULT 'dark';
     `);
     console.log('Added theme column to settings table');
+  }
+}
+
+/**
+ * マイグレーション v4: Settings テーブルにcharacter_typeとcharacter_genderカラムを追加
+ */
+async function migration_v4(database: SQLite.SQLiteDatabase): Promise<void> {
+  const tableInfo = await database.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(settings)"
+  );
+  
+  const hasCharacterTypeColumn = tableInfo.some(col => col.name === 'character_type');
+  const hasCharacterGenderColumn = tableInfo.some(col => col.name === 'character_gender');
+  
+  if (!hasCharacterTypeColumn) {
+    await database.execAsync(`
+      ALTER TABLE settings ADD COLUMN character_type TEXT NOT NULL DEFAULT 'simple';
+    `);
+    console.log('Added character_type column to settings table');
+  }
+  
+  if (!hasCharacterGenderColumn) {
+    await database.execAsync(`
+      ALTER TABLE settings ADD COLUMN character_gender TEXT NOT NULL DEFAULT 'male';
+    `);
+    console.log('Added character_gender column to settings table');
   }
 }
