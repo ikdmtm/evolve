@@ -161,12 +161,33 @@ npm test
 
 ## 8. 実機確認手順
 
+### WSL2 で QR が無効になる場合
+
+WSL2 では Expo が表示するアドレスが WSL 内の IP になり、スマホから届かないことがあります。**トンネルモード**で起動すると、公開URL経由で接続できます。
+
+### 「使用可能なデータがありません」と出る場合
+
+このプロジェクトには **expo-dev-client** が入っています。そのため通常の `expo start --tunnel` では **開発クライアント用**の QR が表示され、**Expo Go では読めません**。Expo Go で接続する場合は **`--go`** を付けて起動してください。
+
+```bash
+npm run start:tunnel:go
+# または
+npx expo start --tunnel --go
+```
+
+- 起動後、**「Tunnel ready」や exp://xxx.ngrok.io のような URL** が表示されたら、その QR コードを **Expo Go** でスキャンする
+- トンネルが立ち上がるまで数十秒かかることがある
+- QR が読めない場合は、ターミナルに表示された **exp://…** の URL を Expo Go の「URLを入力」欄にコピペしても接続できる
+
+### 通常の実機確認
+
 1. Expoサーバー起動
    ```bash
    npm start
    ```
+   （WSL2 + Expo Go の場合は `npm run start:tunnel:go` を推奨）
 
-2. Expo Goアプリでスキャン
+2. Expo Goアプリでスキャン（トンネル起動時はトンネル用の QR をスキャン）
 
 3. 動作確認
    - 各画面の表示

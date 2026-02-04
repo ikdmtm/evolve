@@ -154,10 +154,11 @@ export default function HistoryScreen() {
     setSelectedWorkout(null);
   }
 
-  function getIntensityLabel(intensity: 'easy' | 'medium' | 'hard'): string {
+  function getIntensityLabel(intensity: 'easy' | 'medium' | 'hard' | undefined): string {
     if (intensity === 'easy') return '低';
     if (intensity === 'medium') return '中';
-    return '高';
+    if (intensity === 'hard') return '高';
+    return '中'; // デフォルト
   }
 
   function getDayStatusColor(day: DayInfo): string {
