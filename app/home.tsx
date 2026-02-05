@@ -26,7 +26,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       loadDayData();
-    }, [currentDate])
+    }, [])
   );
 
   useEffect(() => {
@@ -41,19 +41,66 @@ export default function HomeScreen() {
       const workoutRepo = new WorkoutRepository();
       const settingsRepo = new SettingsRepository();
 
-      const dayState = await dayStateRepo.getByDate(currentDate);
-      setLevel(dayState?.level ?? 0);
+      // まず前日のレベルを確定させる（今日を読み込むときのみ）
+      if (currentDate === today) {
+        await finalizePreviousDays(dayStateRepo, workoutRepo, settingsRepo);
+      }
+
+      let dayState = await dayStateRepo.getByDate(currentDate);
       
       // 固定休息日かどうかをチェック
       const dayOfWeek = new Date(currentDate).getDay();
       const fixedRestDays = await settingsRepo.getFixedRestDays();
       const isFixedRestDay = fixedRestDays.includes(dayOfWeek);
       
+      // ワークアウトの有無を確認
+      const workouts = await workoutRepo.getByDate(currentDate);
+      const hasActivity = workouts.length > 0;
+      
+      // レベルが存在しない場合は前日から計算
+      if (!dayState || dayState.level === undefined) {
+        const yesterday = new Date(currentDate);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+        const yesterdayState = await dayStateRepo.getByDate(yesterdayStr);
+        const prevLevel = yesterdayState?.level ?? 0;
+        
+        const isManualRestDay = dayState?.isRestDay ?? false;
+        const isRestDay = isManualRestDay || isFixedRestDay;
+        
+        // 今日の場合は前日のレベルをそのまま表示（まだ確定していない）
+        if (currentDate === today) {
+          setLevel(prevLevel);
+          // dayStateオブジェクトを作成（保存はしない）
+          dayState = { date: currentDate, isRestDay, level: prevLevel };
+        } else {
+          // 過去の日の場合は、レベルを計算して保存
+          let newLevel = prevLevel;
+          if (hasActivity) {
+            newLevel = Math.min(prevLevel + 1, 10);
+          } else if (isRestDay) {
+            newLevel = prevLevel;
+          } else {
+            newLevel = Math.max(prevLevel - 1, 0);
+          }
+          
+          // データベースに保存
+          await dayStateRepo.upsert({
+            date: currentDate,
+            isRestDay: isRestDay,
+            level: newLevel,
+          });
+          
+          setLevel(newLevel);
+          dayState = { date: currentDate, isRestDay, level: newLevel };
+        }
+      } else {
+        setLevel(dayState.level);
+      }
+      
       // 固定休息日または手動休息日の場合はisRestDay=true
       setIsRestDay(dayState?.isRestDay ?? isFixedRestDay);
-
-      const workouts = await workoutRepo.getByDate(currentDate);
-      setHasActivity(workouts.length > 0);
+      setHasActivity(hasActivity);
 
       // キャラクター設定を読み込み
       const charType = await settingsRepo.getCharacterType();
@@ -64,6 +111,79 @@ export default function HomeScreen() {
       console.error('Failed to load day data:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  /**
+   * 過去の未確定日のレベルを確定させる
+   * 今日より前の日で、レベルが記録されていない日を遡って確定する
+   */
+  async function finalizePreviousDays(
+    dayStateRepo: DayStateRepository,
+    workoutRepo: WorkoutRepository,
+    settingsRepo: SettingsRepository
+  ) {
+    // 最大30日前まで遡る
+    const daysToCheck = 30;
+    const datesToFinalize: string[] = [];
+    
+    // 未確定の日をリストアップ
+    for (let i = 1; i <= daysToCheck; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      
+      const dayState = await dayStateRepo.getByDate(dateStr);
+      if (!dayState || dayState.level === undefined) {
+        datesToFinalize.push(dateStr);
+      } else {
+        // レベルが記録されている日に到達したら終了
+        break;
+      }
+    }
+    
+    // 古い順（最も過去の日から）に確定していく
+    datesToFinalize.reverse();
+    
+    for (const dateStr of datesToFinalize) {
+      // 前日のレベルを取得
+      const date = new Date(dateStr);
+      date.setDate(date.getDate() - 1);
+      const prevDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const prevDayState = await dayStateRepo.getByDate(prevDateStr);
+      const prevLevel = prevDayState?.level ?? 0;
+      
+      // その日の活動と休息日設定を確認
+      const workouts = await workoutRepo.getByDate(dateStr);
+      const hasActivity = workouts.length > 0;
+      
+      const dateObj = new Date(dateStr);
+      const dayOfWeek = dateObj.getDay();
+      const fixedRestDays = await settingsRepo.getFixedRestDays();
+      const isFixedRestDay = fixedRestDays.includes(dayOfWeek);
+      
+      const existingDayState = await dayStateRepo.getByDate(dateStr);
+      const isManualRestDay = existingDayState?.isRestDay ?? false;
+      const isRestDay = isManualRestDay || isFixedRestDay;
+      
+      // レベルを計算
+      let newLevel = prevLevel;
+      if (hasActivity) {
+        newLevel = Math.min(prevLevel + 1, 10);
+      } else if (isRestDay) {
+        newLevel = prevLevel;
+      } else {
+        newLevel = Math.max(prevLevel - 1, 0);
+      }
+      
+      // データベースに保存
+      await dayStateRepo.upsert({
+        date: dateStr,
+        isRestDay: isRestDay,
+        level: newLevel,
+      });
+      
+      console.log(`[finalizePreviousDays] ${dateStr}: ${prevLevel} -> ${newLevel} (hasActivity: ${hasActivity}, isRestDay: ${isRestDay})`);
     }
   }
 

@@ -4,7 +4,11 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "base": {
+      "node": "20.18.0"
+    },
     "development": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
@@ -12,12 +16,14 @@
       }
     },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
       "ios": {
         "simulator": false
       }
     },
     "production": {
+      "extends": "base",
       "autoIncrement": true,
       "ios": {
         "simulator": false
@@ -27,9 +33,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-app-store-connect-id",
-        "appleTeamId": "your-team-id"
+        "appleId": "informationft0@gmail.com",
+        "ascAppId": "6758581674",
+        "appleTeamId": "JM76BZ3L58"
       }
     }
   }
