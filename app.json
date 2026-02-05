@@ -2,7 +2,7 @@
   "expo": {
     "name": "Evolve",
     "slug": "evolve",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -14,10 +14,11 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.evolve.app",
+      "bundleIdentifier": "com.ikdmtm.evolve",
       "infoPlist": {
         "NSCameraUsageDescription": "このアプリはカメラを使用しません",
-        "NSPhotoLibraryUsageDescription": "このアプリは写真ライブラリを使用しません"
+        "NSPhotoLibraryUsageDescription": "このアプリは写真ライブラリを使用しません",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -25,7 +26,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.evolve.app"
+      "package": "com.ikdmtm.evolve"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -40,7 +41,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "c133cc74-0e81-4448-8e81-fff4dba45ed4"
       }
     }
   }
